@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AuraJPS Driver App</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;800;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;background:#05101E;font-family:'Barlow',system-ui,sans-serif;}
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;}
+  input,textarea,button{font-family:inherit;}
+  ::-webkit-scrollbar{width:3px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:#1E3A6B;border-radius:2px;}
+  .ms{font-family:'Material Symbols Rounded';font-style:normal;font-weight:400;line-height:1;display:inline-flex;align-items:center;justify-content:center;letter-spacing:normal;text-transform:none;white-space:nowrap;direction:ltr;-webkit-font-smoothing:antialiased;user-select:none;vertical-align:middle;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+
+// Android.jsx — Simplified Android (Material 3) device frame
+// Status bar + top app bar + content + gesture nav + keyboard.
+// Based on Figma M3 spec. No dependencies, no image assets.
+
+const MD_C = {
+  surface: '#f4fbf8',
+  surfaceVariant: '#dae5e1',
+  inverseOnSurface: '#ecf2ef',
+  secondaryContainer: '#cde8e1',
+  primaryFixedDim: '#83d5c6',
+  onSurface: '#171d1b',
+  onSurfaceVar: '#49454f',
+  onPrimaryContainer: '#00201c',
+  primary: '#006a60',
+  frameBorder: 'rgba(116,119,117,0.5)'
+};
+
+// ─────────────────────────────────────────────────────────────
+// Status bar (time left, wifi/cell/battery right)
+// ─────────────────────────────────────────────────────────────
+function AndroidStatusBar({ dark = false }) {
+  const c = dark ? '#fff' : MD_C.onSurface;
+  return (
+    <div style={{
+      height: 40, display: 'flex', alignItems: 'center',
+      justifyContent: 'space-between', padding: '0 16px',
+      position: 'relative',
+      fontFamily: 'Roboto, system-ui, sans-serif'
+    }}>
+      {/* time left */}
+      <div style={{ width: 128, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 14, fontWeight: 400, letterSpacing: 0.25, lineHeight: '20px', color: c }}>9:30</span>
+      </div>
+      {/* camera punch-hole (center) */}
+      <div style={{
+        position: 'absolute', left: '50%', top: 8, transform: 'translateX(-50%)',
+        width: 24, height: 24, borderRadius: 100, background: '#2e2e2e'
+      }} />
+      {/* status icons right */}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', paddingRight: 2 }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginRight: -2 }}>
+            <path d="M8 13.3L.67 5.97a10.37 10.37 0 0114.66 0L8 13.3z" fill={c} />
+          </svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" style={{ marginRight: -2 }}>
+            <path d="M14.67 14.67V1.33L1.33 14.67h13.34z" fill={c} />
+          </svg>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <rect x="3.75" y="2" width="8.5" height="13" rx="1.5" fill={c} />
+          <rect x="5.5" y="0.9" width="5" height="2" rx="0.5" fill={c} />
+        </svg>
+      </div>
+    </div>);
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// Top app bar (Material 3 small/medium)
+// ─────────────────────────────────────────────────────────────
+function AndroidAppBar({ title = 'Title', large = false }) {
+  const iconDot =
+  <div style={{
+    width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center'
+  }}>
+      <div style={{ width: 22, height: 22, borderRadius: '50%', background: MD_C.onSurfaceVar, opacity: 0.3 }} />
+    </div>;
+
+  return (
+    <div style={{ background: MD_C.surface, padding: '4px 4px 0' }}>
+      <div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {iconDot}
+        {!large &&
+        <span style={{
+          flex: 1, fontSize: 22, fontWeight: 400, color: MD_C.onSurface,
+          fontFamily: 'Roboto, system-ui, sans-serif'
+        }}>{title}</span>
+        }
+        {large && <div style={{ flex: 1 }} />}
+        {iconDot}
+      </div>
+      {large &&
+      <div style={{
+        padding: '16px 16px 20px',
+        fontSize: 28, fontWeight: 400, color: MD_C.onSurface,
+        fontFamily: 'Roboto, system-ui, sans-serif'
+      }}>{title}</div>
+      }
+    </div>);
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// List item (Material 3)
+// ─────────────────────────────────────────────────────────────
+function AndroidListItem({ headline, supporting, leading }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 16,
+      padding: '12px 16px', minHeight: 56, boxSizing: 'border-box',
+      fontFamily: 'Roboto, system-ui, sans-serif'
+    }}>
+      {leading &&
+      <div style={{
+        width: 40, height: 40, borderRadius: '50%',
+        background: MD_C.primary, color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 18, fontWeight: 500, flexShrink: 0
+      }}>{leading}</div>
+      }
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 16, color: MD_C.onSurface, lineHeight: '24px' }}>{headline}</div>
+        {supporting &&
+        <div style={{ fontSize: 14, color: MD_C.onSurfaceVar, lineHeight: '20px' }}>{supporting}</div>
+        }
+      </div>
+    </div>);
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// Gesture nav bar (pill)
+// ─────────────────────────────────────────────────────────────
+function AndroidNavBar({ dark = false }) {
+  return (
+    <div style={{
+      height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center'
+    }}>
+      <div style={{
+        width: 108, height: 4, borderRadius: 2,
+        background: dark ? '#fff' : MD_C.onSurface, opacity: 0.4
+      }} />
+    </div>);
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// Device frame — wraps everything
+// ─────────────────────────────────────────────────────────────
+function AndroidDevice({
+  children, width = 412, height = 892, dark = false,
+  title, large = false, keyboard = false
+}) {
+  return (
+    <div style={{
+      width, height, borderRadius: 18, overflow: 'hidden',
+      background: dark ? '#1d1b20' : MD_C.surface,
+      border: `8px solid ${MD_C.frameBorder}`,
+      boxShadow: '0 30px 80px rgba(0,0,0,0.25)',
+      display: 'flex', flexDirection: 'column', boxSizing: 'border-box'
+    }}>
+      <AndroidStatusBar dark={dark} />
+      {title !== undefined && <AndroidAppBar title={title} large={large} />}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        {children}
+      </div>
+      {keyboard && <AndroidKeyboard />}
+      <AndroidNavBar dark={dark} />
+    </div>);
+
+}
+
+// ─────────────────────────────────────────────────────────────
+// Keyboard — Gboard (Material 3)
+// ─────────────────────────────────────────────────────────────
+function AndroidKeyboard() {
+  let _k = 0;
+  const key = (l, { flex = 1, bg = MD_C.surface, r = 6, minW, fs = 21 } = {}) =>
+  <div key={_k++} style={{
+    height: 46, borderRadius: r, flex, minWidth: minW,
+    background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: 'Roboto, system-ui', fontSize: fs,
+    color: MD_C.onPrimaryContainer
+  }}>{l}</div>;
+
+  const row = (keys, style = {}) =>
+  <div style={{ display: 'flex', gap: 6, justifyContent: 'center', ...style }}>
+      {keys.map((l) => key(l))}
+    </div>;
+
+  return (
+    <div style={{
+      background: MD_C.inverseOnSurface, padding: '0 8px 8px',
+      display: 'flex', flexDirection: 'column', gap: 4
+    }}>
+      {/* navbar spacer (icons omitted) */}
+      <div style={{ height: 44 }} />
+      {/* key rows */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {row(['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'])}
+        {row(['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'], { padding: '0 20px' })}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {key('', { bg: MD_C.surfaceVariant })}
+          <div style={{ display: 'flex', gap: 6, flex: 7, minWidth: 274 }}>
+            {['z', 'x', 'c', 'v', 'b', 'n', 'm'].map((l) => key(l))}
+          </div>
+          {key('', { bg: MD_C.surfaceVariant })}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {key('?123', { bg: MD_C.secondaryContainer, r: 100, minW: 58, fs: 14 })}
+          {key(',', { bg: MD_C.surfaceVariant })}
+          {key('', { flex: 3, minW: 154 })}
+          {key('.', { bg: MD_C.surfaceVariant })}
+          {key('', { bg: MD_C.primaryFixedDim, r: 100, minW: 58 })}
+        </div>
+      </div>
+    </div>);
+
+}
+
+
+
+// AuraJPS Driver App — Theme & Shared Components
+
+const T = {
+  navyDark: '#0A1628',
+  navyMid: '#0F2044',
+  navyCard: '#152855',
+  navyBorder: '#1E3A6B',
+  blue: '#1A6ED4',
+  cyan: '#00AAFF',
+  cyanLight: '#40C4FF',
+  white: '#FFFFFF',
+  muted: '#7A9CC5',
+  mutedDark: '#3D5A84',
+  success: '#22C55E',
+  successBg: '#052E16',
+  warning: '#F59E0B',
+  warningBg: '#2D1B00',
+  danger: '#EF4444',
+  dangerBg: '#2D0A0A',
+  pending: '#8B5CF6',
+  pendingBg: '#1A0A3D'
+};
+
+const F = {
+  family: "'Barlow', 'Roboto', system-ui, sans-serif",
+  mono: "'Roboto Mono', monospace"
+};
+
+// ── Icon helper (Material Symbols Rounded) ───────────────────
+function Icon({ n, size = 20, color = 'currentColor', style = {} }) {
+  return <span className="ms" style={{ fontSize: size, color, lineHeight: 1, flexShrink: 0, ...style }}>{n}</span>;
+}
+
+// ── Shared small components ─────────────────────────────────
+
+function AppHeader({ title, subtitle, onBack, rightEl, dark = true }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '12px 16px 10px',
+      background: dark ? T.navyMid : T.navyDark,
+      borderBottom: `1px solid ${T.navyBorder}`,
+      minHeight: 56
+    }}>
+      {onBack &&
+      <button onClick={onBack} style={{
+        width: 36, height: 36, borderRadius: 8,
+        background: T.navyCard, border: 'none',
+        color: T.white, cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+      }}><Icon n="chevron_left" size={22} color={T.white} /></button>
+      }
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: F.family, fontWeight: 700, fontSize: 18, color: T.white, lineHeight: 1.2 }}>{title}</div>
+        {subtitle && <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginTop: 2 }}>{subtitle}</div>}
+      </div>
+      {rightEl}
+    </div>);
+
+}
+
+function StatusBadge({ status }) {
+  const map = {
+    pending: { label: 'Pending', bg: T.pendingBg, color: T.pending, dot: T.pending },
+    pickup: { label: 'Pickup', bg: T.warningBg, color: T.warning, dot: T.warning },
+    transit: { label: 'In Transit', bg: '#0A1A3D', color: T.cyan, dot: T.cyan },
+    delivered: { label: 'Delivered', bg: T.successBg, color: T.success, dot: T.success },
+    failed: { label: 'Failed', bg: T.dangerBg, color: T.danger, dot: T.danger }
+  };
+  const s = map[status] || map.pending;
+  return (
+    <div style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      background: s.bg, color: s.color,
+      borderRadius: 20, padding: '3px 10px',
+      fontSize: 11, fontWeight: 700, fontFamily: F.family,
+      textTransform: 'uppercase', letterSpacing: 0.5,
+      border: '1px solid rgb(0, 53, 137)'
+    }}>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+      {s.label}
+    </div>);
+
+}
+
+function Card({ children, style = {}, onClick }) {
+  return (
+    <div onClick={onClick} style={{
+      background: T.navyCard,
+      border: `1px solid ${T.navyBorder}`,
+      borderRadius: 12,
+      padding: '14px 16px',
+      cursor: onClick ? 'pointer' : 'default',
+      ...style
+    }}>
+      {children}
+    </div>);
+
+}
+
+function BigButton({ label, sublabel, color = T.cyan, bg, icon, onClick, style = {} }) {
+  return (
+    <button onClick={onClick} style={{
+      width: '100%', padding: '16px',
+      background: bg || `${color}22`,
+      border: `1.5px solid ${color}55`,
+      borderRadius: 14, cursor: 'pointer',
+      display: 'flex', alignItems: 'center', gap: 14,
+      textAlign: 'left', ...style
+    }}>
+      {icon && <div style={{
+        width: 46, height: 46, borderRadius: 12,
+        background: `${color}33`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0
+      }}>{icon}</div>}
+      <div>
+        <div style={{ fontFamily: F.family, fontSize: 16, fontWeight: 700, color: T.white }}>{label}</div>
+        {sublabel && <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginTop: 2 }}>{sublabel}</div>}
+      </div>
+    </button>);
+
+}
+
+function BottomNav({ active, onNav }) {
+  const items = [
+  { id: 'dashboard', icon: 'home', label: 'Home' },
+  { id: 'deliveries', icon: 'package_2', label: 'Delivery' },
+  { id: 'scanner', icon: 'qr_code_scanner', label: 'Scan' },
+  { id: 'expense', icon: 'account_balance_wallet', label: 'Expense' },
+  { id: 'profile', icon: 'person', label: 'Profil' }];
+
+  return (
+    <div style={{
+      display: 'flex', background: T.navyMid,
+      borderTop: `1px solid ${T.navyBorder}`,
+      padding: '6px 0 2px'
+    }}>
+      {items.map((it) =>
+      <button key={it.id} onClick={() => onNav(it.id)} style={{
+        flex: 1, border: 'none', background: 'none',
+        cursor: 'pointer', padding: '6px 0',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2
+      }}>
+          <Icon n={it.icon} size={22} color={active === it.id ? T.cyan : T.mutedDark} />
+          <div style={{
+          fontFamily: F.family, fontSize: 10, fontWeight: 600,
+          color: active === it.id ? T.cyan : T.mutedDark,
+          textTransform: 'uppercase', letterSpacing: 0.5
+        }}>{it.label}</div>
+          {active === it.id &&
+        <div style={{ width: 20, height: 2, borderRadius: 1, background: T.cyan }} />
+        }
+        </button>
+      )}
+    </div>);
+
+}
+
+function SyncIndicator({ synced }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 5,
+      background: synced ? T.successBg : T.warningBg,
+      border: `1px solid ${synced ? T.success : T.warning}44`,
+      borderRadius: 20, padding: '4px 10px', color: "rgb(0, 0, 0)"
+    }}>
+      <Icon n={synced ? 'cloud_done' : 'wifi_off'} size={14} color={synced ? T.success : T.warning} />
+      <span style={{ fontFamily: F.family, fontSize: 11, fontWeight: 600, color: synced ? T.success : T.warning }}>
+        {synced ? 'Synced' : 'Offline'}
+      </span>
+    </div>);
+
+}
+
+function Divider() {
+  return <div style={{ height: 1, background: T.navyBorder, margin: '4px 0' }} />;
+}
+
+
+
+// Screens 1–5: Login, Dashboard, DeliveryList, ParcelDetail, POD
+
+const DELIVERIES = [
+{ id: 'AJP001234', customer: 'Ahmad Zulkifli', address: 'No 12, Jln Merbau 3, Taman Sri Muda, Shah Alam', phone: '0123456789', weight: '3.2 kg', status: 'delivered', time: '09:14' },
+{ id: 'AJP001235', customer: 'Siti Nurhaliza', address: 'B-3-5, Residensi Lestari, Putrajaya', phone: '0187654321', weight: '1.5 kg', status: 'transit', time: '10:30' },
+{ id: 'AJP001236', customer: 'Ravi Kumar', address: 'Lot 45, Jln Utama, Klang, Selangor', phone: '0112233445', weight: '5.8 kg', status: 'pickup', time: '11:00' },
+{ id: 'AJP001237', customer: 'Mei Ling Tan', address: 'No 7, Taman Desa, Kuala Lumpur', phone: '0198765432', weight: '0.8 kg', status: 'pending', time: '12:15' },
+{ id: 'AJP001238', customer: 'Hafiz Roslan', address: 'D-12-01, Menara Kuchai, KL', phone: '0134567890', weight: '2.1 kg', status: 'pending', time: '13:00' },
+{ id: 'AJP001239', customer: 'Priya Rajan', address: 'No 88, Jln Semarak, Ampang', phone: '0165432198', weight: '4.0 kg', status: 'failed', time: '14:00' }];
+
+
+// ── 1. LOGIN ─────────────────────────────────────────────────
+function LoginScreen({ onLogin }) {
+  const [user, setUser] = React.useState('');
+  const [pass, setPass] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+
+  function handleLogin() {
+    setLoading(true);
+    setTimeout(() => {setLoading(false);onLogin();}, 1200);
+  }
+
+  const fields = [
+  { label: 'ID Pemandu / Driver ID', val: user, set: setUser, placeholder: 'e.g. DRV-2024-001', icon: 'person', type: 'text' },
+  { label: 'Kata Laluan / Password', val: pass, set: setPass, placeholder: '••••••••', icon: 'lock', type: 'password' }];
+
+
+  return (
+    <div style={{ minHeight: '100%', background: T.navyDark, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ background: `linear-gradient(160deg, ${T.blue}33 0%, ${T.navyMid} 60%)`, borderBottom: `1px solid ${T.navyBorder}`, padding: '40px 24px 32px', textAlign: 'center' }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ width: 80, height: 80, borderRadius: 20, background: `${T.blue}22`, border: `2px solid ${T.cyan}44`, margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon n="language" size={44} color={T.cyan} />
+          </div>
+          <div style={{ fontFamily: F.family, fontSize: 28, fontWeight: 900, color: T.white, letterSpacing: 1 }}>AURA<span style={{ color: T.cyan }}>JPS</span></div>
+          <div style={{ fontFamily: F.family, fontSize: 13, fontWeight: 600, color: T.muted, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>Cargo Sdn Bhd</div>
+          <div style={{ fontFamily: F.family, fontSize: 11, color: T.mutedDark, marginTop: 6, fontStyle: 'italic' }}>Cepat. Tepat. Dan Aman.</div>
+        </div>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 20, padding: '5px 14px' }}>
+          <Icon n="local_shipping" size={14} color={T.cyan} />
+          <span style={{ fontFamily: F.family, fontSize: 12, color: T.cyan, fontWeight: 600 }}>Driver Mobile App</span>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, padding: '28px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontFamily: F.family, fontSize: 22, fontWeight: 800, color: T.white, marginBottom: 4 }}>
+          Log Masuk<br /><span style={{ fontSize: 14, fontWeight: 400, color: T.muted }}>Sign in to your driver account</span>
+        </div>
+
+        {fields.map((f, i) =>
+        <div key={i}>
+            <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 600, color: T.muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{f.label}</div>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex' }}>
+                <Icon n={f.icon} size={18} color={T.muted} />
+              </span>
+              <input value={f.val} onChange={(e) => f.set(e.target.value)} type={f.type} placeholder={f.placeholder}
+            style={{ width: '100%', boxSizing: 'border-box', background: T.navyCard, border: `1.5px solid ${T.navyBorder}`, borderRadius: 12, padding: '14px 14px 14px 42px', fontFamily: F.family, fontSize: 15, color: T.white, outline: 'none' }} />
+            </div>
+          </div>
+        )}
+
+        <button onClick={handleLogin} disabled={loading} style={{ width: '100%', padding: '16px', marginTop: 8, background: loading ? T.mutedDark : `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 14, cursor: 'pointer', fontFamily: F.family, fontSize: 16, fontWeight: 800, color: T.white, letterSpacing: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          {loading ? <><Icon n="sync" size={18} color={T.white} /> Logging in...</> : <><Icon n="login" size={18} color={T.white} /> Log Masuk / Login</>}
+        </button>
+
+        <div style={{ textAlign: 'center', fontFamily: F.family, fontSize: 12, color: T.muted }}>
+          Lupa kata laluan? <span style={{ color: T.cyan }}>Hubungi Dispatcher</span>
+        </div>
+
+        <div style={{ marginTop: 'auto', padding: '16px', background: T.navyCard, borderRadius: 12, border: `1px solid ${T.navyBorder}` }}>
+          <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted, textAlign: 'center', marginBottom: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>Security</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[['smartphone', 'Device Binding'], ['lock', 'Secure Login'], ['timer', 'Auto Logout']].map(([ic, label], i) =>
+            <div key={i} style={{ flex: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <Icon n={ic} size={18} color={T.mutedDark} />
+                <div style={{ fontFamily: F.family, fontSize: 10, color: T.mutedDark }}>{label}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>);
+
+}
+
+// ── 2. DASHBOARD ─────────────────────────────────────────────
+function DashboardScreen({ onNav, onParcel }) {
+  const [synced, setSynced] = React.useState(true);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Selamat Pagi' : hour < 17 ? 'Selamat Tengahari' : 'Selamat Petang';
+
+  const stats = [
+  { label: 'Assigned', value: 6, icon: 'assignment', color: T.cyan },
+  { label: 'Delivered', value: 1, icon: 'check_circle', color: T.success },
+  { label: 'Pending', value: 4, icon: 'pending', color: T.warning },
+  { label: 'Failed', value: 1, icon: 'cancel', color: T.danger }];
+
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark, overflowY: 'auto' }}>
+      <div style={{ background: `linear-gradient(135deg, ${T.blue}22, ${T.navyMid})`, border: `0 0 1px 0`, borderBottom: `1px solid ${T.navyBorder}`, padding: '14px 16px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+          <div>
+            <div style={{ fontFamily: F.family, fontSize: 13, color: T.muted }}>{greeting}</div>
+            <div style={{ fontFamily: F.family, fontSize: 20, fontWeight: 800, color: T.white }}>Ahmad Faizal</div>
+            <div style={{ fontFamily: F.family, fontSize: 11, color: T.cyan, marginTop: 2 }}>DRV-2024-008 · WXY 1234</div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+            <SyncIndicator synced={synced} />
+            <button onClick={() => setSynced((s) => !s)} style={{ background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: F.family, fontSize: 10, color: T.cyan, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Icon n="sync" size={12} color={T.cyan} /> Sync
+            </button>
+          </div>
+        </div>
+        <div style={{ background: `${T.cyan}15`, border: `1px solid ${T.cyan}33`, borderRadius: 12, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted }}>Ahad, 20 April 2026</div>
+            <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.cyan }}>1 / 6 siap</div>
+          </div>
+          <div style={{ height: 6, background: T.navyBorder, borderRadius: 3 }}>
+            <div style={{ width: '16.7%', height: '100%', background: `linear-gradient(90deg, ${T.blue}, ${T.cyan})`, borderRadius: 3 }} />
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {stats.map((s, i) =>
+          <Card key={i} style={{ textAlign: 'center', padding: '14px 8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}><Icon n={s.icon} size={24} color={s.color} /></div>
+              <div style={{ fontFamily: F.family, fontSize: 28, fontWeight: 900, color: s.color, lineHeight: 1.1 }}>{s.value}</div>
+              <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+            </Card>
+          )}
+        </div>
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Tindakan Cepat / Quick Actions</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <BigButton icon={<Icon n="package_2" size={22} color={T.cyan} />} label="Senarai Delivery Hari Ini" sublabel="Today's Delivery List — 6 parcel" color={T.cyan} onClick={() => onNav('deliveries')} />
+            <BigButton icon={<Icon n="add_box" size={22} color={T.success} />} label="Buat Order Baru" sublabel="Create New Delivery Order" color={T.success} onClick={() => onNav('createorder')} />
+            <BigButton icon={<Icon n="qr_code_scanner" size={22} color={T.warning} />} label="Imbas Barkod" sublabel="Scan barcode parcel" color={T.warning} onClick={() => onNav('scanner')} />
+            <BigButton icon={<Icon n="map" size={22} color={T.success} />} label="Navigasi / Navigation" sublabel="Paparkan laluan — Show route" color={T.success} onClick={() => onNav('gps')} />
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Terkini / Recent</div>
+          {DELIVERIES.slice(0, 3).map((d, i) =>
+          <div key={i} onClick={() => onParcel(d)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${T.navyBorder}`, cursor: 'pointer' }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: T.navyCard, border: `1px solid ${T.navyBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon n="package_2" size={20} color={T.cyan} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>{d.customer}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.id} · {d.address.split(',')[0]}</div>
+              </div>
+              <StatusBadge status={d.status} />
+            </div>
+          )}
+        </div>
+        <div style={{ height: 8 }} />
+      </div>
+    </div>);
+
+}
+
+// ── 3. DELIVERY LIST ─────────────────────────────────────────
+function DeliveryListScreen({ onBack, onParcel }) {
+  const [filter, setFilter] = React.useState('all');
+  const filters = ['all', 'pending', 'pickup', 'transit', 'delivered', 'failed'];
+  const filtered = filter === 'all' ? DELIVERIES : DELIVERIES.filter((d) => d.status === filter);
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Senarai Delivery" subtitle={`Hari Ini — ${DELIVERIES.length} Parcel`} onBack={onBack} rightEl={<SyncIndicator synced={true} />} />
+      <div style={{ display: 'flex', gap: 6, padding: '10px 14px', overflowX: 'auto', background: T.navyMid, borderBottom: `1px solid ${T.navyBorder}` }}>
+        {filters.map((f) =>
+        <button key={f} onClick={() => setFilter(f)} style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 20, border: `1.5px solid ${filter === f ? T.cyan : T.navyBorder}`, background: filter === f ? `${T.cyan}22` : 'transparent', fontFamily: F.family, fontSize: 11, fontWeight: 700, cursor: 'pointer', color: filter === f ? T.cyan : T.muted, textTransform: 'capitalize' }}>
+            {f === 'all' ? `All (${DELIVERIES.length})` : f}
+          </button>
+        )}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {filtered.map((d, i) =>
+        <Card key={i} onClick={() => onParcel(d)} style={{ padding: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ width: 38, height: 38, borderRadius: 8, background: `${T.cyan}22`, border: `1px solid ${T.cyan}33`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon n="package_2" size={20} color={T.cyan} />
+                </div>
+                <div>
+                  <div style={{ fontFamily: F.mono, fontSize: 12, fontWeight: 700, color: T.cyan }}>{d.id}</div>
+                  <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>{d.customer}</div>
+                </div>
+              </div>
+              <StatusBadge status={d.status} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: F.family, fontSize: 12, color: T.muted, lineHeight: 1.5, marginBottom: 8 }}>
+              <Icon n="location_on" size={14} color={T.muted} />{d.address}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ flex: 1, background: T.navyDark, borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 4, fontFamily: F.family, fontSize: 11, color: T.muted }}>
+                <Icon n="scale" size={13} color={T.muted} />{d.weight}
+              </div>
+              <div style={{ flex: 1, background: T.navyDark, borderRadius: 8, padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 4, fontFamily: F.family, fontSize: 11, color: T.muted }}>
+                <Icon n="schedule" size={13} color={T.muted} />ETA {d.time}
+              </div>
+              <div style={{ flex: 1, background: T.navyDark, borderRadius: 8, padding: '6px 10px', fontFamily: F.family, fontSize: 11, color: T.cyan, textAlign: 'center', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                Detail <Icon n="chevron_right" size={13} color={T.cyan} />
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+    </div>);
+
+}
+
+// ── 4. PARCEL DETAIL ──────────────────────────────────────────
+function ParcelDetailScreen({ parcel, onBack, onPOD }) {
+  const d = parcel || DELIVERIES[1];
+  const steps = ['Pending', 'Pickup', 'In Transit', 'Delivered'];
+  const stepIdx = { pending: 0, pickup: 1, transit: 2, delivered: 3, failed: 3 }[d.status] ?? 0;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Detail Parcel" subtitle={d.id} onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Card style={{ padding: '16px' }}>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 14 }}>Status Penghantaran</div>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+            {steps.map((step, i) =>
+            <React.Fragment key={i}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: i <= stepIdx ? T.cyan : T.navyBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {i < stepIdx ?
+                  <Icon n="check" size={16} color={T.navyDark} /> :
+                  <span style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: i <= stepIdx ? T.navyDark : T.mutedDark }}>{i + 1}</span>}
+                  </div>
+                  <div style={{ fontFamily: F.family, fontSize: 9, color: i <= stepIdx ? T.cyan : T.mutedDark, marginTop: 4, textAlign: 'center', fontWeight: 600 }}>{step}</div>
+                </div>
+                {i < steps.length - 1 && <div style={{ flex: 1, height: 2, background: i < stepIdx ? T.cyan : T.navyBorder, marginBottom: 18 }} />}
+              </React.Fragment>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Maklumat Parcel</div>
+          {[['ID Parcel', d.id], ['Berat / Weight', d.weight], ['Penerima', d.customer], ['Telefon', d.phone], ['Alamat', d.address]].map(([label, val], i) =>
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}`, gap: 12 }}>
+              <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, flexShrink: 0 }}>{label}</div>
+              <div style={{ fontFamily: F.family, fontSize: 12, color: T.white, textAlign: 'right', fontWeight: 600 }}>{val}</div>
+            </div>
+          )}
+        </Card>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ flex: 1, padding: '14px', background: `${T.success}22`, border: `1.5px solid ${T.success}55`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.success, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon n="call" size={18} color={T.success} /> Call
+          </button>
+          <button style={{ flex: 1, padding: '14px', background: `${T.cyan}22`, border: `1.5px solid ${T.cyan}55`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.cyan, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon n="navigation" size={18} color={T.cyan} /> Navigate
+          </button>
+        </div>
+
+        <BigButton icon={<Icon n="check_circle" size={22} color={T.cyan} />} label="Hantar POD / Submit Proof" sublabel="Foto + Tandatangan Penerima" color={T.cyan} onClick={onPOD}
+        style={{ background: `linear-gradient(135deg, ${T.blue}33, ${T.cyan}22)`, border: `1.5px solid ${T.cyan}66` }} />
+
+        <Card>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Nota / Notes</div>
+          <textarea placeholder="Tambah nota... (e.g. customer tidak ada, hantar ke jiran)" style={{ width: '100%', boxSizing: 'border-box', background: T.navyDark, border: `1px solid ${T.navyBorder}`, borderRadius: 8, padding: 10, fontFamily: F.family, fontSize: 13, color: T.white, resize: 'none', height: 72, outline: 'none' }} />
+        </Card>
+        <div style={{ height: 8 }} />
+      </div>
+    </div>);
+
+}
+
+// ── 5. PROOF OF DELIVERY ─────────────────────────────────────
+function PODScreen({ parcel, onBack, onDone }) {
+  const d = parcel || DELIVERIES[1];
+  const [photoTaken, setPhotoTaken] = React.useState(false);
+  const [signed, setSigned] = React.useState(false);
+  const [receiver, setReceiver] = React.useState('');
+  const canvasRef = React.useRef(null);
+  const drawing = React.useRef(false);
+  const lastPos = React.useRef(null);
+
+  function getPos(e) {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+  }
+  function startDraw(e) {drawing.current = true;lastPos.current = getPos(e);}
+  function doDraw(e) {
+    if (!drawing.current) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    const ctx = canvasRef.current.getContext('2d');
+    ctx.strokeStyle = T.cyan;ctx.lineWidth = 2;ctx.lineCap = 'round';
+    ctx.beginPath();ctx.moveTo(lastPos.current.x, lastPos.current.y);ctx.lineTo(pos.x, pos.y);ctx.stroke();
+    lastPos.current = pos;
+    setSigned(true);
+  }
+  function endDraw() {drawing.current = false;}
+  function clearSig() {
+    canvasRef.current.getContext('2d').clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    setSigned(false);
+  }
+
+  const canSubmit = photoTaken && signed && receiver.length > 2;
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Bukti Penghantaran" subtitle="Proof of Delivery — POD" onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.family, fontSize: 13, color: T.muted, background: T.navyCard, border: `1px solid ${T.navyBorder}`, borderRadius: 10, padding: '10px 14px' }}>
+          <Icon n="package_2" size={16} color={T.cyan} /><b style={{ color: T.white }}>{d.id}</b> · {d.customer}
+        </div>
+
+        {/* Step 1: Photo */}
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white }}>
+              <Icon n="photo_camera" size={18} color={photoTaken ? T.success : T.cyan} /> 1. Gambar Bukti / Photo
+            </div>
+            {photoTaken && <span style={{ fontSize: 12, color: T.success, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}><Icon n="check_circle" size={14} color={T.success} />Done</span>}
+          </div>
+          {!photoTaken ?
+          <button onClick={() => setPhotoTaken(true)} style={{ width: '100%', height: 100, background: T.navyDark, border: `2px dashed ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <Icon n="add_a_photo" size={30} color={T.muted} />
+              <span style={{ fontFamily: F.family, fontSize: 12, color: T.muted }}>Ketik untuk ambil gambar</span>
+            </button> :
+
+          <div style={{ height: 100, background: `linear-gradient(135deg, #1a3a1a, #0a2a0a)`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1.5px solid ${T.success}44`, flexDirection: 'column', gap: 6 }}>
+              <Icon n="image" size={30} color={T.success} />
+              <span style={{ fontFamily: F.family, fontSize: 11, color: T.success, fontWeight: 600 }}>Gambar diambil — Photo captured</span>
+              <button onClick={() => setPhotoTaken(false)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 11, cursor: 'pointer' }}>Ambil semula / Retake</button>
+            </div>
+          }
+        </Card>
+
+        {/* Step 2: Receiver */}
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white, marginBottom: 10 }}>
+            <Icon n="person" size={18} color={T.cyan} /> 2. Maklumat Penerima
+          </div>
+          <input value={receiver} onChange={(e) => setReceiver(e.target.value)} placeholder="Nama penerima / Receiver name"
+          style={{ width: '100%', boxSizing: 'border-box', background: T.navyDark, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 14, color: T.white, outline: 'none' }} />
+        </Card>
+
+        {/* Step 3: Signature */}
+        <Card>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white }}>
+              <Icon n="draw" size={18} color={T.cyan} /> 3. Tandatangan / Signature
+            </div>
+            {signed && <button onClick={clearSig} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}><Icon n="refresh" size={12} color={T.muted} />Clear</button>}
+          </div>
+          <div style={{ background: T.navyDark, borderRadius: 10, border: `1.5px dashed ${signed ? T.cyan : T.navyBorder}`, position: 'relative', overflow: 'hidden' }}>
+            <canvas ref={canvasRef} width={340} height={120} style={{ display: 'block', width: '100%', height: 120, touchAction: 'none' }}
+            onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={endDraw}
+            onTouchStart={startDraw} onTouchMove={doDraw} onTouchEnd={endDraw} />
+            {!signed &&
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', display: 'flex', alignItems: 'center', gap: 6, pointerEvents: 'none' }}>
+                <Icon n="draw" size={16} color={T.mutedDark} />
+                <span style={{ fontFamily: F.family, fontSize: 12, color: T.mutedDark }}>Sign here / Tandatangan di sini</span>
+              </div>
+            }
+          </div>
+        </Card>
+
+        <button onClick={canSubmit ? onDone : null} style={{ width: '100%', padding: '16px', background: canSubmit ? `linear-gradient(135deg, ${T.blue}, ${T.cyan})` : T.navyCard, border: `1.5px solid ${canSubmit ? T.cyan : T.navyBorder}`, borderRadius: 14, cursor: canSubmit ? 'pointer' : 'not-allowed', fontFamily: F.family, fontSize: 16, fontWeight: 800, color: canSubmit ? T.navyDark : T.mutedDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          {canSubmit ?
+          <><Icon n="check_circle" size={20} color={T.navyDark} /> Hantar POD / Submit Proof</> :
+          <><Icon n="info" size={20} color={T.mutedDark} /> Lengkapkan semua langkah</>}
+        </button>
+        <div style={{ height: 8 }} />
+      </div>
+    </div>);
+
+}
+
+
+
+// Screens 6–10: Scanner, GPS, Expense, Performance, Profile
+
+// ── 6. BARCODE SCANNER ───────────────────────────────────────
+function ScannerScreen({ onBack, onScanned }) {
+  const [scanning, setScanning] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [manual, setManual] = React.useState('');
+
+  function simulateScan() {
+    setScanning(true);
+    setTimeout(() => {setScanning(false);setResult(DELIVERIES[2]);}, 1800);
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Imbas Barkod" subtitle="Barcode Scanner" onBack={onBack} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 14, gap: 12 }}>
+        {/* Viewfinder */}
+        <div style={{ position: 'relative', background: '#000', borderRadius: 16, overflow: 'hidden', height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${scanning ? T.cyan : T.navyBorder}` }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #050a15 0%, #0a1020 100%)' }} />
+          <div style={{ position: 'relative', width: 180, height: 130 }}>
+            {[['0,0', '0,0'], ['100%,0', '0,0'], ['0,100%', '0,0'], ['100%,100%', '0,0']].map((_, i) => {
+              const top = i > 1 ? '100%' : 0;
+              const left = i % 2 === 1 ? '100%' : 0;
+              const tr = `translate(${left === '100%' ? '-100%' : '0'}, ${top === '100%' ? '-100%' : '0'})`;
+              return <div key={i} style={{ position: 'absolute', top, left, width: 22, height: 22, transform: tr, borderColor: scanning ? T.cyan : T.muted, borderStyle: 'solid', borderWidth: 0, ...(top === 0 ? { borderTopWidth: 2 } : { borderBottomWidth: 2 }), ...(left === 0 ? { borderLeftWidth: 2 } : { borderRightWidth: 2 }) }} />;
+            })}
+            {scanning && <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: T.cyan, boxShadow: `0 0 8px ${T.cyan}`, animation: 'scanLine 1.2s linear infinite', top: '50%' }} />}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon n={scanning ? 'qr_code_scanner' : 'center_focus_strong'} size={16} color={scanning ? T.cyan : T.mutedDark} />
+              <span style={{ fontFamily: F.family, fontSize: 11, color: scanning ? T.cyan : T.mutedDark }}>
+                {scanning ? 'Mengimbas...' : 'Posisi barkod di sini'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={simulateScan} disabled={scanning} style={{ width: '100%', padding: '16px', background: scanning ? T.navyCard : `linear-gradient(135deg, #0F2A7A, ${T.blue})`, border: `1.5px solid ${scanning ? T.navyBorder : T.cyan}`, borderRadius: 14, cursor: scanning ? 'wait' : 'pointer', fontFamily: F.family, fontSize: 16, fontWeight: 800, color: T.white, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon n={scanning ? 'sync' : 'qr_code_scanner'} size={20} color={T.white} />
+          {scanning ? 'Mengimbas / Scanning...' : 'Mula Imbas / Start Scan'}
+        </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={manual} onChange={(e) => setManual(e.target.value)} placeholder="Masuk manual / Enter manually"
+          style={{ flex: 1, background: T.navyCard, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 13, color: T.white, outline: 'none' }} />
+          <button onClick={() => {if (manual) {setResult(DELIVERIES[0]);setManual('');}}} style={{ padding: '12px 16px', background: T.blue, border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontWeight: 700, color: T.white }}>OK</button>
+        </div>
+
+        {result &&
+        <Card style={{ border: `1.5px solid ${T.success}55`, background: T.successBg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.success, marginBottom: 8 }}>
+              <Icon n="check_circle" size={16} color={T.success} /> Parcel Dijumpai / Found
+            </div>
+            <div style={{ fontFamily: F.mono, fontSize: 16, fontWeight: 800, color: T.white }}>{result.id}</div>
+            <div style={{ fontFamily: F.family, fontSize: 13, color: T.muted, marginBottom: 12 }}>{result.customer} · {result.weight}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => {onScanned && onScanned(result);}} style={{ flex: 1, padding: 12, background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.cyan, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon n="open_in_new" size={14} color={T.cyan} /> Lihat Detail
+              </button>
+              <button onClick={() => setResult(null)} style={{ padding: 12, background: T.navyCard, border: `1px solid ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 13, color: T.muted }}>Tutup</button>
+            </div>
+          </Card>
+        }
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Imbasan Terkini / Recent Scans</div>
+          {DELIVERIES.slice(0, 3).map((d, i) =>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}` }}>
+              <div style={{ width: 30, height: 30, borderRadius: 6, background: T.navyCard, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon n="qr_code" size={16} color={T.muted} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.mono, fontSize: 12, color: T.cyan, fontWeight: 700 }}>{d.id}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{d.customer}</div>
+              </div>
+              <StatusBadge status={d.status} />
+            </div>
+          )}
+        </div>
+      </div>
+      <style>{`@keyframes scanLine { 0%{top:10%} 50%{top:85%} 100%{top:10%} }`}</style>
+    </div>);
+
+}
+
+// ── 7. GPS / NAVIGATION ──────────────────────────────────────
+function GPSScreen({ onBack }) {
+  const [tracking, setTracking] = React.useState(true);
+  const dest = DELIVERIES[1];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Navigasi / GPS" subtitle={tracking ? 'Live Tracking Active' : 'Tracking Off'} onBack={onBack}
+      rightEl={
+      <button onClick={() => setTracking((t) => !t)} style={{ background: tracking ? `${T.success}22` : T.navyCard, border: `1px solid ${tracking ? T.success : T.navyBorder}`, borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontFamily: F.family, fontSize: 11, color: tracking ? T.success : T.muted, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon n={tracking ? 'gps_fixed' : 'gps_off'} size={14} color={tracking ? T.success : T.muted} />
+            {tracking ? 'ON' : 'OFF'}
+          </button>
+      } />
+
+      {/* Map placeholder */}
+      <div style={{ position: 'relative', height: 240, background: T.navyCard, overflow: 'hidden', flexShrink: 0, borderBottom: `1px solid ${T.navyBorder}` }}>
+        {[...Array(8)].map((_, i) => <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: `${i * 14}%`, height: 1, background: `${T.navyBorder}66` }} />)}
+        {[...Array(8)].map((_, i) => <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: `${i * 14}%`, width: 1, background: `${T.navyBorder}66` }} />)}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+          <polyline points="40,200 80,160 120,140 160,100 200,80 240,60" stroke={T.cyan} strokeWidth="3" fill="none" strokeDasharray="6,4" opacity="0.7" />
+        </svg>
+        {/* current location */}
+        <div style={{ position: 'absolute', left: 30, top: 185, transform: 'translate(-50%,-50%)' }}>
+          <div style={{ width: 16, height: 16, borderRadius: '50%', background: T.cyan, border: `3px solid white`, boxShadow: `0 0 12px ${T.cyan}` }} />
+          <div style={{ position: 'absolute', width: 40, height: 40, borderRadius: '50%', border: `2px solid ${T.cyan}44`, top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
+        </div>
+        {/* destination pin */}
+        <div style={{ position: 'absolute', left: 232, top: 52, transform: 'translateX(-50%)' }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.danger, border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon n="flag" size={16} color="white" />
+          </div>
+        </div>
+        {/* ETA banner */}
+        <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: `${T.navyMid}ee`, border: `1px solid ${T.navyBorder}`, borderRadius: 20, padding: '5px 14px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon n="navigation" size={14} color={T.cyan} />
+          <span style={{ fontFamily: F.family, fontSize: 12, color: T.white, fontWeight: 700 }}>ETA: <span style={{ color: T.cyan }}>12 min</span> · 4.2 km</span>
+        </div>
+        <div style={{ position: 'absolute', bottom: 8, right: 10, fontFamily: F.family, fontSize: 10, color: T.mutedDark }}>Peta / Map View</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Card style={{ border: `1px solid ${T.cyan}33` }}>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Destinasi Seterusnya / Next Stop</div>
+          <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>{dest.customer}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, fontFamily: F.family, fontSize: 12, color: T.muted, marginTop: 3 }}>
+            <Icon n="location_on" size={14} color={T.muted} style={{ marginTop: 1 }} />{dest.address}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            {[['12', 'minit', 'schedule', T.cyan], ['4.2', 'km', 'route', T.cyan], ['10:30', 'ETA', 'schedule', T.success]].map(([val, label, ic, color], i) =>
+            <div key={i} style={{ flex: 1, background: T.navyDark, borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                <div style={{ fontFamily: F.family, fontSize: 18, fontWeight: 800, color }}>{val}</div>
+                <div style={{ fontFamily: F.family, fontSize: 10, color: T.muted }}>{label}</div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ flex: 1, padding: '14px', background: `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon n="map" size={18} color={T.navyDark} /> Google Maps
+          </button>
+          <button style={{ flex: 1, padding: '14px', background: `${T.warning}22`, border: `1.5px solid ${T.warning}55`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon n="navigation" size={18} color={T.warning} /> Waze
+          </button>
+        </div>
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Senarai Berhenti / Stop List</div>
+          {DELIVERIES.map((d, i) =>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}` }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: d.status === 'delivered' ? T.successBg : i === 1 ? `${T.cyan}33` : T.navyCard, border: `1.5px solid ${d.status === 'delivered' ? T.success : i === 1 ? T.cyan : T.navyBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {d.status === 'delivered' ?
+              <Icon n="check" size={12} color={T.success} /> :
+              <span style={{ fontFamily: F.family, fontSize: 10, fontWeight: 700, color: i === 1 ? T.cyan : T.mutedDark }}>{i + 1}</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white }}>{d.customer}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.address.split(',').slice(0, 2).join(',')}</div>
+              </div>
+              <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{d.time}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>);
+
+}
+
+// ── 8. EXPENSE TRACKING ──────────────────────────────────────
+function ExpenseScreen({ onBack }) {
+  const [expenses, setExpenses] = React.useState([
+  { type: 'fuel', label: 'Minyak / Fuel', amount: 50, note: 'Shell Puchong', icon: 'local_gas_station', color: T.warning, time: '08:30' },
+  { type: 'toll', label: 'Tol / Toll', amount: 4.20, note: 'NPE Tol', icon: 'route', color: T.cyan, time: '09:00' }]
+  );
+  const [adding, setAdding] = React.useState(false);
+  const [form, setForm] = React.useState({ type: 'fuel', amount: '', note: '' });
+
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const types = [
+  { id: 'fuel', label: 'Minyak', icon: 'local_gas_station', color: T.warning },
+  { id: 'toll', label: 'Tol', icon: 'route', color: T.cyan },
+  { id: 'parking', label: 'Parking', icon: 'local_parking', color: T.pending },
+  { id: 'other', label: 'Lain', icon: 'credit_card', color: T.muted }];
+
+
+  function addExpense() {
+    if (!form.amount) return;
+    const t = types.find((x) => x.id === form.type);
+    setExpenses((e) => [...e, { ...form, amount: parseFloat(form.amount), label: t.label, icon: t.icon, color: t.color, time: '—' }]);
+    setAdding(false);
+    setForm({ type: 'fuel', amount: '', note: '' });
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Rekod Perbelanjaan" subtitle="Expense Tracking" onBack={onBack}
+      rightEl={<button onClick={() => setAdding(true)} style={{ background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: F.family, fontSize: 12, color: T.cyan, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}><Icon n="add" size={14} color={T.cyan} />Tambah</button>} />
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Card style={{ background: `linear-gradient(135deg, ${T.blue}22, ${T.navyMid})`, border: `1px solid ${T.cyan}33` }}>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginBottom: 4 }}>Jumlah Hari Ini / Today's Total</div>
+          <div style={{ fontFamily: F.family, fontSize: 34, fontWeight: 900, color: T.cyan }}>RM {total.toFixed(2)}</div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            {types.map((t) => {
+              const sum = expenses.filter((e) => e.type === t.id).reduce((s, e) => s + e.amount, 0);
+              return sum > 0 ?
+              <div key={t.id} style={{ background: T.navyDark, borderRadius: 8, padding: '6px 10px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <Icon n={t.icon} size={16} color={t.color} />
+                  <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: t.color }}>RM{sum.toFixed(2)}</div>
+                </div> :
+              null;
+            })}
+          </div>
+        </Card>
+
+        {adding &&
+        <Card style={{ border: `1.5px solid ${T.cyan}44` }}>
+            <div style={{ fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white, marginBottom: 10 }}>Tambah Perbelanjaan</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {types.map((t) =>
+            <button key={t.id} onClick={() => setForm((f) => ({ ...f, type: t.id }))} style={{ flex: 1, padding: '8px 4px', background: form.type === t.id ? `${t.color}22` : T.navyDark, border: `1.5px solid ${form.type === t.id ? t.color : T.navyBorder}`, borderRadius: 8, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <Icon n={t.icon} size={18} color={form.type === t.id ? t.color : T.muted} />
+                  <span style={{ fontFamily: F.family, fontSize: 10, color: form.type === t.id ? t.color : T.muted, fontWeight: 700 }}>{t.label}</span>
+                </button>
+            )}
+            </div>
+            <input value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} placeholder="Jumlah / Amount (RM)" type="number"
+          style={{ width: '100%', boxSizing: 'border-box', background: T.navyDark, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 15, color: T.white, outline: 'none', marginBottom: 8 }} />
+            <input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} placeholder="Nota / Note (optional)"
+          style={{ width: '100%', boxSizing: 'border-box', background: T.navyDark, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 14, color: T.white, outline: 'none', marginBottom: 10 }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={addExpense} style={{ flex: 2, padding: 12, background: `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon n="save" size={16} color={T.navyDark} /> Simpan
+              </button>
+              <button onClick={() => setAdding(false)} style={{ flex: 1, padding: 12, background: T.navyDark, border: `1px solid ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 14, color: T.muted }}>Batal</button>
+            </div>
+          </Card>
+        }
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Senarai Perbelanjaan</div>
+          {expenses.map((e, i) =>
+          <Card key={i} style={{ marginBottom: 8, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: `${e.color}22`, border: `1px solid ${e.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon n={e.icon} size={22} color={e.color} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>{e.label}</div>
+                  <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{e.note || '—'} · {e.time}</div>
+                </div>
+                <div style={{ fontFamily: F.family, fontSize: 16, fontWeight: 900, color: T.warning }}>RM {e.amount.toFixed(2)}</div>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>);
+
+}
+
+// ── 9. PERFORMANCE DASHBOARD ─────────────────────────────────
+function PerformanceScreen({ onBack }) {
+  const [period, setPeriod] = React.useState('today');
+  const data = {
+    today: { delivered: 1, total: 6, onTime: 100, score: 82, km: 28, earnings: 65 },
+    week: { delivered: 38, total: 42, onTime: 90, score: 88, km: 210, earnings: 450 },
+    month: { delivered: 156, total: 168, onTime: 93, score: 91, km: 920, earnings: 1850 }
+  };
+  const d = data[period];
+  const bars = [
+  { label: 'Isn', val: 8 }, { label: 'Sel', val: 10 }, { label: 'Rab', val: 7 },
+  { label: 'Kha', val: 12 }, { label: 'Jum', val: 9 }, { label: 'Sab', val: 6 }, { label: 'Aha', val: 1 }];
+
+  const maxVal = Math.max(...bars.map((b) => b.val));
+  const scoreColor = d.score >= 90 ? T.success : d.score >= 75 ? T.warning : T.danger;
+
+  const statItems = [
+  { label: 'Dihantar', val: `${d.delivered}/${d.total}`, color: T.cyan, icon: 'package_2' },
+  { label: 'On-Time', val: `${d.onTime}%`, color: T.success, icon: 'timer' },
+  { label: 'Jarak', val: `${d.km} km`, color: T.warning, icon: 'route' },
+  { label: 'Earnings', val: `RM${d.earnings}`, color: T.pending, icon: 'account_balance_wallet' }];
+
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Prestasi / Performance" subtitle="Papan Pemuka Pemandu" onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', background: T.navyCard, borderRadius: 10, padding: 3 }}>
+          {[['today', 'Hari Ini'], ['week', 'Minggu Ini'], ['month', 'Bulan Ini']].map(([id, label]) =>
+          <button key={id} onClick={() => setPeriod(id)} style={{ flex: 1, padding: '8px', background: period === id ? T.blue : 'transparent', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: F.family, fontSize: 11, fontWeight: 700, color: period === id ? T.white : T.muted }}>
+              {label}
+            </button>
+          )}
+        </div>
+
+        <Card style={{ background: `linear-gradient(135deg, ${T.blue}22, ${T.navyCard})`, border: `1px solid ${T.cyan}33`, textAlign: 'center', padding: '20px 16px' }}>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginBottom: 8 }}>Skor Prestasi / Performance Score</div>
+          <div style={{ fontFamily: F.family, fontSize: 52, fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{d.score}</div>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginBottom: 12 }}>/ 100</div>
+          <div style={{ height: 8, background: T.navyDark, borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${d.score}%`, height: '100%', background: `linear-gradient(90deg, ${T.blue}, ${scoreColor})`, borderRadius: 4 }} />
+          </div>
+        </Card>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {statItems.map((s, i) =>
+          <Card key={i} style={{ padding: '12px 14px' }}>
+              <div style={{ marginBottom: 4 }}><Icon n={s.icon} size={20} color={s.color} /></div>
+              <div style={{ fontFamily: F.family, fontSize: 20, fontWeight: 900, color: s.color }}>{s.val}</div>
+              <div style={{ fontFamily: F.family, fontSize: 10, color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+            </Card>
+          )}
+        </div>
+
+        <Card>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Penghantaran Minggu Ini</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+            {bars.map((b, i) =>
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ fontFamily: F.family, fontSize: 9, color: T.muted }}>{b.val}</div>
+                <div style={{ width: '100%', background: i === 6 ? `${T.cyan}44` : `linear-gradient(180deg, ${T.cyan}, ${T.blue})`, borderRadius: '3px 3px 0 0', height: `${b.val / maxVal * 60}px` }} />
+                <div style={{ fontFamily: F.family, fontSize: 8, color: T.muted, fontWeight: 600 }}>{b.label}</div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            <Icon n="emoji_events" size={16} color={T.warning} /> Leaderboard
+          </div>
+          {[
+          { name: 'Hafiz Roslan', score: 95, rank: 1 },
+          { name: 'Ahmad Faizal', score: 88, rank: 2, isMe: true },
+          { name: 'Ravi Kumar', score: 84, rank: 3 }].
+          map((r, i) =>
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px', borderBottom: `1px solid ${T.navyBorder}`, background: r.isMe ? `${T.cyan}11` : 'none', borderRadius: r.isMe ? 8 : 0 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: i === 0 ? '#FFD70033' : T.navyDark, border: `1.5px solid ${i === 0 ? '#FFD700' : T.navyBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {i === 0 ? <Icon n="emoji_events" size={14} color="#FFD700" /> : <span style={{ fontFamily: F.family, fontSize: 11, fontWeight: 800, color: T.muted }}>{r.rank}</span>}
+              </div>
+              <div style={{ flex: 1, fontFamily: F.family, fontSize: 13, fontWeight: 700, color: r.isMe ? T.cyan : T.white }}>{r.name} {r.isMe && '(Anda)'}</div>
+              <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 800, color: r.isMe ? T.cyan : T.muted }}>{r.score}</div>
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>);
+
+}
+
+// ── 10. PROFILE ──────────────────────────────────────────
+function ProfileScreen({ onBack, onNav }) {
+  const p = {
+    name: 'Ahmad Faizal',
+    id: 'DRV-2024-008',
+    vehicle: 'WXY 1234',
+    phone: '012-345 6789',
+    email: 'ahmad.faizal@aurajps.com',
+    branch: 'Shah Alam Hub',
+  };
+
+  const items = [
+    { label: 'Edit Profile', icon: 'edit', action: () => {} },
+    { label: 'Change Password', icon: 'lock_reset', action: () => {} },
+    { label: 'Settings', icon: 'settings', action: () => onNav('settings') },
+    { label: 'Help & Support', icon: 'help', action: () => {} },
+    { label: 'Logout', icon: 'logout', danger: true, action: () => onNav('login') },
+  ];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Profil" onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
+        <Card style={{ padding: '20px 16px', textAlign: 'center', marginBottom: 14 }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: T.navyMid, border: `2px solid ${T.cyan}`, margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon n="person" size={40} color={T.cyan} />
+          </div>
+          <div style={{ fontFamily: F.family, fontSize: 20, fontWeight: 800, color: T.white }}>{p.name}</div>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.cyan, marginTop: 2 }}>{p.id} · {p.vehicle}</div>
+        </Card>
+
+        <Card>
+          {items.map((item, i) => (
+            <React.Fragment key={i}>
+              <div onClick={item.action} style={{ display: 'flex', alignItems: 'center', padding: '14px 0', cursor: 'pointer' }}>
+                <Icon n={item.icon} size={20} color={item.danger ? T.danger : T.muted} />
+                <div style={{ flex: 1, marginLeft: 12, fontFamily: F.family, fontSize: 15, fontWeight: 600, color: item.danger ? T.danger : T.white }}>{item.label}</div>
+                <Icon n="chevron_right" size={20} color={T.muted} />
+              </div>
+              {i < items.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ onBack, onToggleTheme, theme }) {
+  const isDark = theme === 'dark';
+
+  const settingItems = [
+    {
+      id: 'theme',
+      label: 'Theme',
+      icon: 'contrast',
+      action: onToggleTheme,
+      value: (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon n={isDark ? 'dark_mode' : 'light_mode'} size={18} color={T.muted} />
+          <span style={{ fontFamily: F.family, fontSize: 14, color: T.white }}>
+            {isDark ? 'Dark' : 'Light'}
+          </span>
+        </div>
+      ),
+    },
+    { id: 'language', label: 'Language', icon: 'translate', value: 'English' },
+    { id: 'notifications', label: 'Notifications', icon: 'notifications', value: 'On' },
+    { id: 'account', label: 'Account', icon: 'account_circle', value: 'Ahmad Faizal' },
+    { id: 'logout', label: 'Logout', icon: 'logout', danger: true },
+  ];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Settings" onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
+        <Card>
+          {settingItems.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <div
+                onClick={item.action}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '14px 0',
+                  cursor: item.action ? 'pointer' : 'default',
+                }}
+              >
+                <Icon n={item.icon} size={20} color={item.danger ? T.danger : T.muted} />
+                <div
+                  style={{
+                    flex: 1,
+                    marginLeft: 12,
+                    fontFamily: F.family,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: item.danger ? T.danger : T.white,
+                  }}
+                >
+                  {item.label}
+                </div>
+                {typeof item.value === 'string' ? (
+                  <span style={{ fontFamily: F.family, fontSize: 14, color: T.muted }}>
+                    {item.value}
+                  </span>
+                ) : (
+                  item.value
+                )}
+                {item.action && <Icon n="chevron_right" size={20} color={T.muted} />}
+              </div>
+              {index < settingItems.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+// ── CREATE ORDER SCREEN ──────────────────────────────────────
+function CreateOrderScreen({ onBack, onSubmit }) {
+  // Sender
+  const [sNama, setSNama] = React.useState('');
+  const [sPanggilan, setSPanggilan] = React.useState('');
+  const [sIC, setSIC] = React.useState('');
+  const [sPhone, setSPhone] = React.useState('');
+  const [sPhone2, setSPhone2] = React.useState('');
+  const [sAlamat, setSAlamat] = React.useState('');
+  const [sBandar, setSBandar] = React.useState('');
+  const [sNegeri, setSNegeri] = React.useState('');
+  // Parcel
+  const [berat, setBerat] = React.useState('');
+  const [jumlah, setJumlah] = React.useState('');
+  const [saiz, setSaiz] = React.useState('Small');
+  const [lokasi, setLokasi] = React.useState('');
+  const [casTambah, setCasTambah] = React.useState('0');
+  const [agent, setAgent] = React.useState('');
+  const [keterangan, setKeterangan] = React.useState('');
+  // Recipient
+  const [rNama, setRNama] = React.useState('');
+  const [rPanggilan, setRPanggilan] = React.useState('');
+  const [rIC, setRIC] = React.useState('');
+  const [rPhone, setRPhone] = React.useState('');
+  const [rPhone2, setRPhone2] = React.useState('');
+  const [rAlamat, setRAlamat] = React.useState('');
+  const [rRTRW, setRRTRW] = React.useState('');
+  const [rDusun, setRDusun] = React.useState('');
+  const [rKelurahan, setRKelurahan] = React.useState('');
+  const [rKecamatan, setRKecamatan] = React.useState('');
+  const [rKabupaten, setRKabupaten] = React.useState('');
+  const [rProvinsi, setRProvinsi] = React.useState('');
+  const [rPostal, setRPostal] = React.useState('');
+  const [rNegara, setRNegara] = React.useState('MALAYSIA');
+  // Payment
+  const [bayaran, setBayaran] = React.useState('');
+  const [photoTaken, setPhotoTaken] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [step, setStep] = React.useState(0); // 0=pengirim 1=penerima 2=payment
+
+  const iStyle = {
+    width: '100%', boxSizing: 'border-box',
+    background: T.navyDark, border: `1.5px solid ${T.navyBorder}`,
+    borderRadius: 10, padding: '11px 12px',
+    fontFamily: F.family, fontSize: 13, color: T.white, outline: 'none'
+  };
+  const selStyle = { ...iStyle, appearance: 'none', cursor: 'pointer' };
+  const labelStyle = { fontFamily: F.family, fontSize: 10, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4, display: 'block' };
+  const row2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 };
+
+  function Field({ label, val, set, placeholder, type = 'text', full = false }) {
+    return (
+      <div style={full ? {} : {}}>
+        <label style={labelStyle}>{label}</label>
+        <input value={val} onChange={(e) => set(e.target.value)} placeholder={placeholder || label}
+        type={type} style={iStyle} />
+      </div>);
+
+  }
+
+  function SectionHeader({ icon, title, subtitle }) {
+    return (
+      <div style={{ background: `linear-gradient(135deg, ${T.blue}22, ${T.cyan}11)`, border: `1px solid ${T.cyan}33`, borderRadius: 12, padding: '12px 14px', marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: `${T.cyan}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon n={icon} size={20} color={T.cyan} />
+          </div>
+          <div>
+            <div style={{ fontFamily: F.family, fontSize: 15, fontWeight: 800, color: T.white }}>{title}</div>
+            <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{subtitle}</div>
+          </div>
+        </div>
+      </div>);
+
+  }
+
+  const steps = ['Pengirim', 'Penerima', 'Bayaran'];
+
+  function handleSubmit() {
+    setSubmitting(true);
+    setTimeout(() => {setSubmitting(false);onSubmit && onSubmit();}, 1500);
+  }
+
+  const negeriList = ['Selangor', 'Kuala Lumpur', 'Putrajaya', 'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak', 'Terengganu'];
+  const saizList = ['Small', 'Medium', 'Large', 'XL', 'XXL'];
+  const lokasiList = ['Shah Alam', 'Klang', 'Subang Jaya', 'Petaling Jaya', 'Kuala Lumpur', 'Putrajaya', 'Cyberjaya', 'Ampang', 'Cheras', 'Puchong'];
+  const bayaranList = ['Cash On Delivery (COD)', 'Bayar Dahulu / Prepaid', 'Credit Card', 'Bank Transfer', 'E-Wallet'];
+  const negaraList = ['MALAYSIA', 'INDONESIA', 'SINGAPORE', 'THAILAND', 'BRUNEI'];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Buat Order" subtitle="Create New Delivery Order" onBack={onBack} />
+
+      {/* Step tabs */}
+      <div style={{ display: 'flex', background: T.navyMid, borderBottom: `1px solid ${T.navyBorder}` }}>
+        {steps.map((s, i) =>
+        <button key={i} onClick={() => setStep(i)} style={{ flex: 1, padding: '10px 4px', border: 'none', background: 'none', cursor: 'pointer', borderBottom: `2px solid ${step === i ? T.cyan : 'transparent'}`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div style={{ width: 22, height: 22, borderRadius: '50%', background: step >= i ? step === i ? T.cyan : `${T.cyan}44` : T.navyBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: F.family, fontSize: 11, fontWeight: 800, color: step >= i ? T.navyDark : T.mutedDark }}>
+              {step > i ? <Icon n="check" size={12} color={T.navyDark} /> : i + 1}
+            </div>
+            <div style={{ fontFamily: F.family, fontSize: 10, fontWeight: 700, color: step === i ? T.cyan : T.mutedDark, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s}</div>
+          </button>
+        )}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+        {/* ── STEP 0: PENGIRIM ── */}
+        {step === 0 && <>
+          <SectionHeader icon="person_pin" title="Maklumat Pengirim" subtitle="Sila isi butiran penghantar" />
+
+          <Card style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={row2}>
+              <Field label="Nama Penuh" val={sNama} set={setSNama} placeholder="Nama Penuh Pengirim" />
+              <Field label="Nama Panggilan" val={sPanggilan} set={setSPanggilan} placeholder="Nama Panggilan" />
+            </div>
+            <div style={row2}>
+              <Field label="IC/Passport Number" val={sIC} set={setSIC} placeholder="IC/Passport Number" />
+              <Field label="No. Phone" val={sPhone} set={setSPhone} placeholder="No. Phone" type="tel" />
+            </div>
+            <div style={row2}>
+              <Field label="No. Phone 2" val={sPhone2} set={setSPhone2} placeholder="No. Phone 2" type="tel" />
+              <Field label="Bandar / City" val={sBandar} set={setSBandar} placeholder="Bandar" />
+            </div>
+            <div>
+              <label style={labelStyle}>Alamat Garis 1 / Address</label>
+              <input value={sAlamat} onChange={(e) => setSAlamat(e.target.value)} placeholder="Alamat Garis 1" style={iStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Negeri / State</label>
+              <div style={{ position: 'relative' }}>
+                <select value={sNegeri} onChange={(e) => setSNegeri(e.target.value)} style={selStyle}>
+                  <option value="">— Pilih Negeri —</option>
+                  {negeriList.map((n) => <option key={n}>{n}</option>)}
+                </select>
+                <Icon n="expand_more" size={16} color={T.muted} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+            </div>
+          </Card>
+
+          <SectionHeader icon="inventory_2" title="Maklumat Parcel" subtitle="Berat, saiz dan keterangan" />
+
+          <Card style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={row2}>
+              <Field label="Berat / Weight (kg)" val={berat} set={setBerat} placeholder="0.0" type="number" />
+              <Field label="Jumlah Barang" val={jumlah} set={setJumlah} placeholder="0" type="number" />
+            </div>
+            <div style={row2}>
+              <div>
+                <label style={labelStyle}>Saiz / Size</label>
+                <div style={{ position: 'relative' }}>
+                  <select value={saiz} onChange={(e) => setSaiz(e.target.value)} style={selStyle}>
+                    {saizList.map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                  <Icon n="expand_more" size={16} color={T.muted} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Lokasi</label>
+                <div style={{ position: 'relative' }}>
+                  <select value={lokasi} onChange={(e) => setLokasi(e.target.value)} style={selStyle}>
+                    <option value="">— Pilih Lokasi —</option>
+                    {lokasiList.map((l) => <option key={l}>{l}</option>)}
+                  </select>
+                  <Icon n="expand_more" size={16} color={T.muted} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                </div>
+              </div>
+            </div>
+            <div style={row2}>
+              <Field label="Cas Tambahan (RM)" val={casTambah} set={setCasTambah} placeholder="0" type="number" />
+              <Field label="Agent Name" val={agent} set={setAgent} placeholder="Agent Name" />
+            </div>
+            <div>
+              <label style={labelStyle}>Keterangan / Remarks</label>
+              <textarea value={keterangan} onChange={(e) => setKeterangan(e.target.value)}
+              placeholder="Keterangan isi dalam kotak..."
+              style={{ ...iStyle, height: 80, resize: 'none', lineHeight: 1.5 }} />
+            </div>
+          </Card>
+
+          <button onClick={() => setStep(1)} style={{ width: '100%', padding: '14px', background: `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 15, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            Seterusnya / Next <Icon n="arrow_forward" size={18} color={T.navyDark} />
+          </button>
+        </>}
+
+        {/* ── STEP 1: PENERIMA ── */}
+        {step === 1 && <>
+          <SectionHeader icon="location_on" title="Maklumat Penerima" subtitle="Sila isi maklumat penerima" />
+
+          <Card style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={row2}>
+              <Field label="Nama Penuh" val={rNama} set={setRNama} placeholder="Nama Penuh Penerima" />
+              <Field label="Nama Panggilan" val={rPanggilan} set={setRPanggilan} placeholder="Nama Panggilan" />
+            </div>
+            <div style={row2}>
+              <Field label="KTP/Passport Number" val={rIC} set={setRIC} placeholder="KTP/Passport" />
+              <Field label="No. Phone" val={rPhone} set={setRPhone} placeholder="082289112829" type="tel" />
+            </div>
+            <div style={row2}>
+              <Field label="No. Phone 2" val={rPhone2} set={setRPhone2} placeholder="082289112829" type="tel" />
+              <Field label="RT / RW" val={rRTRW} set={setRRTRW} placeholder="RT / RW" />
+            </div>
+            <div>
+              <label style={labelStyle}>Alamat / Address</label>
+              <input value={rAlamat} onChange={(e) => setRAlamat(e.target.value)} placeholder="Alamat Penerima" style={iStyle} />
+            </div>
+            <div style={row2}>
+              <Field label="Dusun" val={rDusun} set={setRDusun} placeholder="Dusun" />
+              <Field label="Kelurahan" val={rKelurahan} set={setRKelurahan} placeholder="Kelurahan" />
+            </div>
+            <div style={row2}>
+              <Field label="Kecamatan" val={rKecamatan} set={setRKecamatan} placeholder="Kecamatan" />
+              <Field label="Kabupaten" val={rKabupaten} set={setRKabupaten} placeholder="Kabupaten" />
+            </div>
+            <div style={row2}>
+              <Field label="Provinsi" val={rProvinsi} set={setRProvinsi} placeholder="Provinsi" />
+              <Field label="Postal Code" val={rPostal} set={setRPostal} placeholder="Postal Code" type="number" />
+            </div>
+            <div>
+              <label style={labelStyle}>Negara / Country</label>
+              <div style={{ position: 'relative' }}>
+                <select value={rNegara} onChange={(e) => setRNegara(e.target.value)} style={selStyle}>
+                  {negaraList.map((n) => <option key={n}>{n}</option>)}
+                </select>
+                <Icon n="expand_more" size={16} color={T.muted} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+            </div>
+          </Card>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setStep(0)} style={{ flex: 1, padding: '14px', background: T.navyCard, border: `1.5px solid ${T.navyBorder}`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon n="arrow_back" size={16} color={T.muted} /> Balik
+            </button>
+            <button onClick={() => setStep(2)} style={{ flex: 2, padding: '14px', background: `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              Seterusnya <Icon n="arrow_forward" size={16} color={T.navyDark} />
+            </button>
+          </div>
+        </>}
+
+        {/* ── STEP 2: PAYMENT ── */}
+        {step === 2 && <>
+          <SectionHeader icon="receipt_long" title="Kos & Pembayaran" subtitle="Semak dan hantar order" />
+
+          {/* Order summary */}
+          <Card style={{ border: `1px solid ${T.cyan}33` }}>
+            <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Ringkasan / Summary</div>
+            {[
+            ['Pengirim', sNama || '—', 'person'],
+            ['Penerima', rNama || '—', 'location_on'],
+            ['Berat', berat ? `${berat} kg` : '—', 'scale'],
+            ['Saiz', saiz, 'inventory_2'],
+            ['Lokasi', lokasi || '—', 'map']].
+            map(([label, val, ic], i) =>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: `1px solid ${T.navyBorder}` }}>
+                <Icon n={ic} size={14} color={T.muted} />
+                <div style={{ flex: 1, fontFamily: F.family, fontSize: 12, color: T.muted }}>{label}</div>
+                <div style={{ fontFamily: F.family, fontSize: 12, color: T.white, fontWeight: 600 }}>{val}</div>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 8, borderTop: `1px solid ${T.cyan}33` }}>
+              <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>Jumlah Kos / Total</div>
+              <div style={{ fontFamily: F.family, fontSize: 20, fontWeight: 900, color: T.cyan }}>RM {(parseFloat(casTambah) || 0).toFixed(2)}</div>
+            </div>
+          </Card>
+
+          <Card style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <label style={labelStyle}>Kaedah Pembayaran / Payment Method</label>
+              <div style={{ position: 'relative' }}>
+                <select value={bayaran} onChange={(e) => setBayaran(e.target.value)} style={selStyle}>
+                  <option value="">— Sila pilih Kaedah Pembayaran —</option>
+                  {bayaranList.map((b) => <option key={b}>{b}</option>)}
+                </select>
+                <Icon n="expand_more" size={16} color={T.muted} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Tangkap Gambar / Capture Image</label>
+              {!photoTaken ?
+              <button onClick={() => setPhotoTaken(true)} style={{ width: '100%', height: 80, background: T.navyDark, border: `2px dashed ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Icon n="add_a_photo" size={22} color={T.muted} />
+                  <span style={{ fontFamily: F.family, fontSize: 13, color: T.muted }}>Ambil gambar parcel</span>
+                </button> :
+
+              <div style={{ height: 80, background: T.successBg, border: `1.5px solid ${T.success}44`, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <Icon n="check_circle" size={20} color={T.success} />
+                  <span style={{ fontFamily: F.family, fontSize: 13, color: T.success, fontWeight: 600 }}>Gambar diambil</span>
+                  <button onClick={() => setPhotoTaken(false)} style={{ background: 'none', border: 'none', color: T.muted, fontSize: 11, cursor: 'pointer', marginLeft: 8 }}>Semula</button>
+                </div>
+              }
+            </div>
+          </Card>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setStep(1)} style={{ flex: 1, padding: '14px', background: T.navyCard, border: `1.5px solid ${T.navyBorder}`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon n="arrow_back" size={16} color={T.muted} /> Balik
+            </button>
+            <button onClick={handleSubmit} disabled={submitting} style={{ flex: 2, padding: '14px', background: submitting ? T.mutedDark : `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 12, cursor: submitting ? 'wait' : 'pointer', fontFamily: F.family, fontSize: 15, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              {submitting ? <><Icon n="sync" size={18} color={T.navyDark} /> Menghantar...</> : <><Icon n="send" size={18} color={T.navyDark} /> Hantar / Submit</>}
+            </button>
+          </div>
+        </>}
+
+        <div style={{ height: 10 }} />
+      </div>
+    </div>);
+
+}
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accentColor": "#00D4AA",
+  "showLeaderboard": true,
+  "driverName": "Ahmad Faizal",
+  "lightMode": true
+}/*EDITMODE-END*/;
+
+const darkTheme = {
+  navyDark: '#0A1628', navyMid: '#0F2044', navyCard: '#152855', navyBorder: '#1E3A6B',
+  blue: '#1A6ED4', cyan: '#00AAFF', cyanLight: '#40C4FF',
+  white: '#FFFFFF', muted: '#7A9CC5', mutedDark: '#3D5A84',
+  success: '#22C55E', successBg: '#052E16', warning: '#F59E0B', warningBg: '#2D1B00',
+  danger: '#EF4444', dangerBg: '#2D0A0A', pending: '#8B5CF6', pendingBg: '#1A0A3D'
+};
+const lightTheme = {
+  navyDark: '#EBF2FF', navyMid: '#FFFFFF', navyCard: '#FFFFFF', navyBorder: '#C0D2EE',
+  blue: '#1255B5', cyan: '#0088CC', cyanLight: '#2BB5E8',
+  white: '#0A1628', muted: '#3B608E', mutedDark: '#8AAAC8',
+  success: '#15803D', successBg: '#DCFCE7', warning: '#B45309', warningBg: '#FEF3C7',
+  danger: '#DC2626', dangerBg: '#FEE2E2', pending: '#6D28D9', pendingBg: '#EDE9FE'
+};
+// Initialize T from saved preference
+const _savedTweaks = (() => {try {return JSON.parse(localStorage.getItem('aurajps_tweaks') || '{}');} catch {return {};}})();
+const _initLight = _savedTweaks.lightMode || TWEAK_DEFAULTS.lightMode;
+Object.assign(T, _initLight ? lightTheme : darkTheme);
+document.body.style.background = _initLight ? '#D8E8FF' : '#05101E';
+
+const { useState, useEffect } = React;
+
+function App() {
+  const [theme, setTheme] = useState('dark');
+  const [activeScreen, setActiveScreen] = useState('login');
+  const [activeParcel, setActiveParcel] = useState(null);
+
+  function toggleTheme() {
+    setTheme(current => (current === 'dark' ? 'light' : 'dark'));
+  }
+
+  function handleNav(screen) {
+    setActiveScreen(screen);
+  }
+
+  function handleParcelSelect(parcel) {
+    setActiveParcel(parcel);
+    setActiveScreen('parcelDetail');
+  }
+
+  function handleBack() {
+    if (activeScreen === 'parcelDetail') {
+      setActiveScreen('deliveries');
+    } else if (activeScreen === 'settings') {
+      setActiveScreen('dashboard');
+    } else {
+      setActiveScreen('dashboard');
+    }
+  }
+  
+  const screens = {
+    login: <LoginScreen onLogin={() => setActiveScreen('dashboard')} />,
+    dashboard: <DashboardScreen onNav={handleNav} onParcel={handleParcelSelect} />,
+    deliveries: <DeliveryListScreen onBack={handleBack} onParcel={handleParcelSelect} />,
+    parcelDetail: <ParcelDetailScreen parcel={activeParcel} onBack={handleBack} onPOD={() => setActiveScreen('pod')} />,
+    pod: <PODScreen parcel={activeParcel} onBack={() => setActiveScreen('parcelDetail')} />,
+    scanner: <ScannerScreen onBack={handleBack} />,
+    expense: <ExpenseScreen onBack={handleBack} />,
+    profile: <ProfileScreen onBack={handleBack} onNav={handleNav} />,
+    settings: <SettingsScreen onBack={handleBack} onToggleTheme={toggleTheme} theme={theme} />,
+    gps: <GPSScreen onBack={handleBack} />,
+  };
+
+  return (
+    <AndroidDevice dark={theme === 'dark'}>
+      <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          {screens[activeScreen]}
+        </div>
+        {['dashboard', 'deliveries', 'scanner', 'expense', 'profile'].includes(activeScreen) && (
+          <BottomNav active={activeScreen} onNav={handleNav} />
+        )}
+      </div>
+    </AndroidDevice>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>

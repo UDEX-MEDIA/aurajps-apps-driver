@@ -1,0 +1,129 @@
+// Screens 6–10: Scanner, GPS, Expense, Performance, Profile
+
+// ── 6. BARCODE SCANNER ───────────────────────────────────────
+function ScannerScreen({ onBack, onScanned }) {
+  const [scanning, setScanning] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [manual, setManual] = React.useState('');
+
+  function simulateScan() {
+    setScanning(true);
+    setTimeout(() => { setScanning(false); setResult(DELIVERIES[2]); }, 1800);
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Imbas Barkod" subtitle="Barcode Scanner" onBack={onBack} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 14, gap: 12 }}>
+        {/* Viewfinder */}
+        <div style={{ position: 'relative', background: '#000', borderRadius: 16, overflow: 'hidden', height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${scanning ? T.cyan : T.navyBorder}` }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #050a15 0%, #0a1020 100%)' }} />
+          <div style={{ position: 'relative', width: 180, height: 130 }}>
+            {[['0,0','0,0'],['100%,0','0,0'],['0,100%','0,0'],['100%,100%','0,0']].map((_, i) => {
+              const top = i > 1 ? '100%' : 0;
+              const left = i % 2 === 1 ? '100%' : 0;
+              const tr = `translate(${left === '100%' ? '-100%' : '0'}, ${top === '100%' ? '-100%' : '0'})`;
+              return <div key={i} style={{ position: 'absolute', top, left, width: 22, height: 22, transform: tr, borderColor: scanning ? T.cyan : T.muted, borderStyle: 'solid', borderWidth: 0, ...(top === 0 ? {borderTopWidth:2} : {borderBottomWidth:2}), ...(left === 0 ? {borderLeftWidth:2} : {borderRightWidth:2}) }} />;
+            })}
+            {scanning && <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: T.cyan, boxShadow: `0 0 8px ${T.cyan}`, animation: 'scanLine 1.2s linear infinite', top: '50%' }} />}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon n={scanning ? 'qr_code_scanner' : 'center_focus_strong'} size={16} color={scanning ? T.cyan : T.mutedDark}/>
+              <span style={{ fontFamily: F.family, fontSize: 11, color: scanning ? T.cyan : T.mutedDark }}>
+                {scanning ? 'Mengimbas...' : 'Posisi barkod di sini'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={simulateScan} disabled={scanning} style={{ width: '100%', padding: '16px', background: scanning ? T.navyCard : `linear-gradient(135deg, #0F2A7A, ${T.blue})`, border: `1.5px solid ${scanning ? T.navyBorder : T.cyan}`, borderRadius: 14, cursor: scanning ? 'wait' : 'pointer', fontFamily: F.family, fontSize: 16, fontWeight: 800, color: T.white, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon n={scanning ? 'sync' : 'qr_code_scanner'} size={20} color={T.white}/>
+          {scanning ? 'Mengimbas / Scanning...' : 'Mula Imbas / Start Scan'}
+        </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={manual} onChange={e => setManual(e.target.value)} placeholder="Masuk manual / Enter manually"
+            style={{ flex: 1, background: T.navyCard, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 13, color: T.white, outline: 'none' }} />
+          <button onClick={() => { if (manual) { setResult(DELIVERIES[0]); setManual(''); } }} style={{ padding: '12px 16px', background: T.blue, border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontWeight: 700, color: T.white }}>OK</button>
+        </div>
+
+        {result && (
+          <Card style={{ border: `1.5px solid ${T.success}55`, background: T.successBg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.success, marginBottom: 8 }}>
+              <Icon n="check_circle" size={16} color={T.success}/> Parcel Dijumpai / Found
+            </div>
+            <div style={{ fontFamily: F.mono, fontSize: 16, fontWeight: 800, color: T.white }}>{result.id}</div>
+            <div style={{ fontFamily: F.family, fontSize: 13, color: T.muted, marginBottom: 12 }}>{result.customer} · {result.weight}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { onScanned && onScanned(result); }} style={{ flex: 1, padding: 12, background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.cyan, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon n="open_in_new" size={14} color={T.cyan}/> Lihat Detail
+              </button>
+              <button onClick={() => setResult(null)} style={{ padding: 12, background: T.navyCard, border: `1px solid ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 13, color: T.muted }}>Tutup</button>
+            </div>
+          </Card>
+        )}
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Imbasan Terkini / Recent Scans</div>
+          {DELIVERIES.slice(0, 3).map((d, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}` }}>
+              <div style={{ width: 30, height: 30, borderRadius: 6, background: T.navyCard, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon n="qr_code" size={16} color={T.muted}/>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.mono, fontSize: 12, color: T.cyan, fontWeight: 700 }}>{d.id}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{d.customer}</div>
+              </div>
+              <StatusBadge status={d.status} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes scanLine { 0%{top:10%} 50%{top:85%} 100%{top:10%} }`}</style>
+    </div>
+  );
+}
+
+// ── 7. GPS / NAVIGATION ──────────────────────────────────────
+function GPSScreen({ onBack }) {
+  const [tracking, setTracking] = React.useState(true);
+  const dest = DELIVERIES[1];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Navigasi / GPS" subtitle={tracking ? 'Live Tracking Active' : 'Tracking Off'} onBack={onBack}
+        rightEl={
+          <button onClick={() => setTracking(t => !t)} style={{ background: tracking ? `${T.success}22` : T.navyCard, border: `1px solid ${tracking ? T.success : T.navyBorder}`, borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontFamily: F.family, fontSize: 11, color: tracking ? T.success : T.muted, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon n={tracking ? 'gps_fixed' : 'gps_off'} size={14} color={tracking ? T.success : T.muted}/>
+            {tracking ? 'ON' : 'OFF'}
+          </button>
+        } />
+
+      {/* Map placeholder */}
+      <div style={{ position: 'relative', height: 240, background: '#0a1a30', overflow: 'hidden', flexShrink: 0 }}>
+        {[...Array(8)].map((_, i) => <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: `${i * 14}%`, height: 1, background: `${T.navyBorder}66` }} />)}
+        {[...Array(8)].map((_, i) => <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: `${i * 14}%`, width: 1, background: `${T.navyBorder}66` }} />)}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+          <polyline points="40,200 80,160 120,140 160,100 200,80 240,60" stroke={T.cyan} strokeWidth="3" fill="none" strokeDasharray="6,4" opacity="0.7" />
+        </svg>
+        {/* current location */}
+        <div style={{ position: 'absolute', left: 30, top: 185, transform: 'translate(-50%,-50%)' }}>
+          <div style={{ width: 16, height: 16, borderRadius: '50%', background: T.cyan, border: `3px solid white`, boxShadow: `0 0 12px ${T.cyan}` }} />
+          <div style={{ position: 'absolute', width: 40, height: 40, borderRadius: '50%', border: `2px solid ${T.cyan}44`, top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
+        </div>
+        {/* destination pin */}
+        <div style={{ position: 'absolute', left: 232, top: 52, transform: 'translateX(-50%)' }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.danger, border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon n="flag" size={16} color="white"/>
+          </div>
+        </div>
+        {/* ETA banner */}
+        <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: `${T.navyMid}ee`, border: `1px solid ${T.navyBorder}`, borderRadius: 20, padding: '5px 14px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon n="navigation" size={14} color={T.cyan}/>
+          <span style={{ fontFamily: F.family, fontSize: 12, color: T.white, fontWeight: 700 }}>ETA: <span style={{ color: T.cyan }}>12 min</span> · 4.2 km</span>
+        </div>
+        <div style={{ position: 'absolute', bottom: 8, right: 10, fontFamily: F.family, fontSize: 10, color: T.mutedDark }}>Peta / Map View</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Card style={{ border: `1px solid ${T.cyan}33` }}>
+     

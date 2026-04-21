@@ -1,0 +1,439 @@
+// Screens 6–10: Scanner, GPS, Expense, Performance, Profile
+
+// ── 6. BARCODE SCANNER ───────────────────────────────────────
+function ScannerScreen({ onBack, onScanned }) {
+  const [scanning, setScanning] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [manual, setManual] = React.useState('');
+
+  function simulateScan() {
+    setScanning(true);
+    setTimeout(() => { setScanning(false); setResult(DELIVERIES[2]); }, 1800);
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Imbas Barkod" subtitle="Barcode Scanner" onBack={onBack} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 14, gap: 12 }}>
+        {/* Viewfinder */}
+        <div style={{ position: 'relative', background: '#000', borderRadius: 16, overflow: 'hidden', height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${scanning ? T.cyan : T.navyBorder}` }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #050a15 0%, #0a1020 100%)' }} />
+          <div style={{ position: 'relative', width: 180, height: 130 }}>
+            {[['0,0','0,0'],['100%,0','0,0'],['0,100%','0,0'],['100%,100%','0,0']].map((_, i) => {
+              const top = i > 1 ? '100%' : 0;
+              const left = i % 2 === 1 ? '100%' : 0;
+              const tr = `translate(${left === '100%' ? '-100%' : '0'}, ${top === '100%' ? '-100%' : '0'})`;
+              return <div key={i} style={{ position: 'absolute', top, left, width: 22, height: 22, transform: tr, borderColor: scanning ? T.cyan : T.muted, borderStyle: 'solid', borderWidth: 0, ...(top === 0 ? {borderTopWidth:2} : {borderBottomWidth:2}), ...(left === 0 ? {borderLeftWidth:2} : {borderRightWidth:2}) }} />;
+            })}
+            {scanning && <div style={{ position: 'absolute', left: 0, right: 0, height: 2, background: T.cyan, boxShadow: `0 0 8px ${T.cyan}`, animation: 'scanLine 1.2s linear infinite', top: '50%' }} />}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <Icon n={scanning ? 'qr_code_scanner' : 'center_focus_strong'} size={16} color={scanning ? T.cyan : T.mutedDark}/>
+              <span style={{ fontFamily: F.family, fontSize: 11, color: scanning ? T.cyan : T.mutedDark }}>
+                {scanning ? 'Mengimbas...' : 'Posisi barkod di sini'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={simulateScan} disabled={scanning} style={{ width: '100%', padding: '16px', background: scanning ? T.navyCard : `linear-gradient(135deg, #0F2A7A, ${T.blue})`, border: `1.5px solid ${scanning ? T.navyBorder : T.cyan}`, borderRadius: 14, cursor: scanning ? 'wait' : 'pointer', fontFamily: F.family, fontSize: 16, fontWeight: 800, color: T.white, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon n={scanning ? 'sync' : 'qr_code_scanner'} size={20} color={T.white}/>
+          {scanning ? 'Mengimbas / Scanning...' : 'Mula Imbas / Start Scan'}
+        </button>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input value={manual} onChange={e => setManual(e.target.value)} placeholder="Masuk manual / Enter manually"
+            style={{ flex: 1, background: T.navyCard, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 13, color: T.white, outline: 'none' }} />
+          <button onClick={() => { if (manual) { setResult(DELIVERIES[0]); setManual(''); } }} style={{ padding: '12px 16px', background: T.blue, border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontWeight: 700, color: T.white }}>OK</button>
+        </div>
+
+        {result && (
+          <Card style={{ border: `1.5px solid ${T.success}55`, background: T.successBg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.success, marginBottom: 8 }}>
+              <Icon n="check_circle" size={16} color={T.success}/> Parcel Dijumpai / Found
+            </div>
+            <div style={{ fontFamily: F.mono, fontSize: 16, fontWeight: 800, color: T.white }}>{result.id}</div>
+            <div style={{ fontFamily: F.family, fontSize: 13, color: T.muted, marginBottom: 12 }}>{result.customer} · {result.weight}</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => { onScanned && onScanned(result); }} style={{ flex: 1, padding: 12, background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.cyan, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon n="open_in_new" size={14} color={T.cyan}/> Lihat Detail
+              </button>
+              <button onClick={() => setResult(null)} style={{ padding: 12, background: T.navyCard, border: `1px solid ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 13, color: T.muted }}>Tutup</button>
+            </div>
+          </Card>
+        )}
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Imbasan Terkini / Recent Scans</div>
+          {DELIVERIES.slice(0, 3).map((d, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}` }}>
+              <div style={{ width: 30, height: 30, borderRadius: 6, background: T.navyCard, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon n="qr_code" size={16} color={T.muted}/>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.mono, fontSize: 12, color: T.cyan, fontWeight: 700 }}>{d.id}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{d.customer}</div>
+              </div>
+              <StatusBadge status={d.status} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes scanLine { 0%{top:10%} 50%{top:85%} 100%{top:10%} }`}</style>
+    </div>
+  );
+}
+
+// ── 7. GPS / NAVIGATION ──────────────────────────────────────
+function GPSScreen({ onBack }) {
+  const [tracking, setTracking] = React.useState(true);
+  const dest = DELIVERIES[1];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Navigasi / GPS" subtitle={tracking ? 'Live Tracking Active' : 'Tracking Off'} onBack={onBack}
+        rightEl={
+          <button onClick={() => setTracking(t => !t)} style={{ background: tracking ? `${T.success}22` : T.navyCard, border: `1px solid ${tracking ? T.success : T.navyBorder}`, borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontFamily: F.family, fontSize: 11, color: tracking ? T.success : T.muted, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon n={tracking ? 'gps_fixed' : 'gps_off'} size={14} color={tracking ? T.success : T.muted}/>
+            {tracking ? 'ON' : 'OFF'}
+          </button>
+        } />
+
+      {/* Map placeholder */}
+      <div style={{ position: 'relative', height: 240, background: '#0a1a30', overflow: 'hidden', flexShrink: 0 }}>
+        {[...Array(8)].map((_, i) => <div key={i} style={{ position: 'absolute', left: 0, right: 0, top: `${i * 14}%`, height: 1, background: `${T.navyBorder}66` }} />)}
+        {[...Array(8)].map((_, i) => <div key={i} style={{ position: 'absolute', top: 0, bottom: 0, left: `${i * 14}%`, width: 1, background: `${T.navyBorder}66` }} />)}
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+          <polyline points="40,200 80,160 120,140 160,100 200,80 240,60" stroke={T.cyan} strokeWidth="3" fill="none" strokeDasharray="6,4" opacity="0.7" />
+        </svg>
+        {/* current location */}
+        <div style={{ position: 'absolute', left: 30, top: 185, transform: 'translate(-50%,-50%)' }}>
+          <div style={{ width: 16, height: 16, borderRadius: '50%', background: T.cyan, border: `3px solid white`, boxShadow: `0 0 12px ${T.cyan}` }} />
+          <div style={{ position: 'absolute', width: 40, height: 40, borderRadius: '50%', border: `2px solid ${T.cyan}44`, top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
+        </div>
+        {/* destination pin */}
+        <div style={{ position: 'absolute', left: 232, top: 52, transform: 'translateX(-50%)' }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: T.danger, border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon n="flag" size={16} color="white"/>
+          </div>
+        </div>
+        {/* ETA banner */}
+        <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: `${T.navyMid}ee`, border: `1px solid ${T.navyBorder}`, borderRadius: 20, padding: '5px 14px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Icon n="navigation" size={14} color={T.cyan}/>
+          <span style={{ fontFamily: F.family, fontSize: 12, color: T.white, fontWeight: 700 }}>ETA: <span style={{ color: T.cyan }}>12 min</span> · 4.2 km</span>
+        </div>
+        <div style={{ position: 'absolute', bottom: 8, right: 10, fontFamily: F.family, fontSize: 10, color: T.mutedDark }}>Peta / Map View</div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <Card style={{ border: `1px solid ${T.cyan}33` }}>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Destinasi Seterusnya / Next Stop</div>
+          <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>{dest.customer}</div>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4, fontFamily: F.family, fontSize: 12, color: T.muted, marginTop: 3 }}>
+            <Icon n="location_on" size={14} color={T.muted} style={{marginTop:1}}/>{dest.address}
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            {[['12','minit','schedule',T.cyan],['4.2','km','route',T.cyan],['10:30','ETA','schedule',T.success]].map(([val,label,ic,color],i) => (
+              <div key={i} style={{ flex: 1, background: T.navyDark, borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                <div style={{ fontFamily: F.family, fontSize: 18, fontWeight: 800, color }}>{val}</div>
+                <div style={{ fontFamily: F.family, fontSize: 10, color: T.muted }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ flex: 1, padding: '14px', background: `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon n="map" size={18} color={T.navyDark}/> Google Maps
+          </button>
+          <button style={{ flex: 1, padding: '14px', background: `${T.warning}22`, border: `1.5px solid ${T.warning}55`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.warning, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Icon n="navigation" size={18} color={T.warning}/> Waze
+          </button>
+        </div>
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Senarai Berhenti / Stop List</div>
+          {DELIVERIES.map((d, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}` }}>
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: d.status === 'delivered' ? T.successBg : i === 1 ? `${T.cyan}33` : T.navyCard, border: `1.5px solid ${d.status === 'delivered' ? T.success : i === 1 ? T.cyan : T.navyBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {d.status === 'delivered'
+                  ? <Icon n="check" size={12} color={T.success}/>
+                  : <span style={{ fontFamily: F.family, fontSize: 10, fontWeight: 700, color: i === 1 ? T.cyan : T.mutedDark }}>{i + 1}</span>}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white }}>{d.customer}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.address.split(',').slice(0, 2).join(',')}</div>
+              </div>
+              <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{d.time}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 8. EXPENSE TRACKING ──────────────────────────────────────
+function ExpenseScreen({ onBack }) {
+  const [expenses, setExpenses] = React.useState([
+    { type: 'fuel',    label: 'Minyak / Fuel', amount: 50,   note: 'Shell Puchong', icon: 'local_gas_station', color: T.warning, time: '08:30' },
+    { type: 'toll',    label: 'Tol / Toll',    amount: 4.20, note: 'NPE Tol',        icon: 'route',             color: T.cyan,    time: '09:00' },
+  ]);
+  const [adding, setAdding] = React.useState(false);
+  const [form, setForm] = React.useState({ type: 'fuel', amount: '', note: '' });
+
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+  const types = [
+    { id: 'fuel',    label: 'Minyak', icon: 'local_gas_station', color: T.warning },
+    { id: 'toll',    label: 'Tol',    icon: 'route',             color: T.cyan },
+    { id: 'parking', label: 'Parking',icon: 'local_parking',     color: T.pending },
+    { id: 'other',   label: 'Lain',   icon: 'credit_card',       color: T.muted },
+  ];
+
+  function addExpense() {
+    if (!form.amount) return;
+    const t = types.find(x => x.id === form.type);
+    setExpenses(e => [...e, { ...form, amount: parseFloat(form.amount), label: t.label, icon: t.icon, color: t.color, time: '—' }]);
+    setAdding(false);
+    setForm({ type: 'fuel', amount: '', note: '' });
+  }
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Rekod Perbelanjaan" subtitle="Expense Tracking" onBack={onBack}
+        rightEl={<button onClick={() => setAdding(true)} style={{ background: `${T.cyan}22`, border: `1px solid ${T.cyan}44`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontFamily: F.family, fontSize: 12, color: T.cyan, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}><Icon n="add" size={14} color={T.cyan}/>Tambah</button>} />
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Card style={{ background: `linear-gradient(135deg, #0F2A7A, #0a1628)`, border: `1px solid ${T.cyan}33` }}>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginBottom: 4 }}>Jumlah Hari Ini / Today's Total</div>
+          <div style={{ fontFamily: F.family, fontSize: 34, fontWeight: 900, color: T.cyan }}>RM {total.toFixed(2)}</div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
+            {types.map(t => {
+              const sum = expenses.filter(e => e.type === t.id).reduce((s, e) => s + e.amount, 0);
+              return sum > 0 ? (
+                <div key={t.id} style={{ background: T.navyDark, borderRadius: 8, padding: '6px 10px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                  <Icon n={t.icon} size={16} color={t.color}/>
+                  <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: t.color }}>RM{sum.toFixed(2)}</div>
+                </div>
+              ) : null;
+            })}
+          </div>
+        </Card>
+
+        {adding && (
+          <Card style={{ border: `1.5px solid ${T.cyan}44` }}>
+            <div style={{ fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white, marginBottom: 10 }}>Tambah Perbelanjaan</div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+              {types.map(t => (
+                <button key={t.id} onClick={() => setForm(f => ({ ...f, type: t.id }))} style={{ flex: 1, padding: '8px 4px', background: form.type === t.id ? `${t.color}22` : T.navyDark, border: `1.5px solid ${form.type === t.id ? t.color : T.navyBorder}`, borderRadius: 8, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                  <Icon n={t.icon} size={18} color={form.type === t.id ? t.color : T.muted}/>
+                  <span style={{ fontFamily: F.family, fontSize: 10, color: form.type === t.id ? t.color : T.muted, fontWeight: 700 }}>{t.label}</span>
+                </button>
+              ))}
+            </div>
+            <input value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="Jumlah / Amount (RM)" type="number"
+              style={{ width: '100%', boxSizing: 'border-box', background: T.navyDark, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 15, color: T.white, outline: 'none', marginBottom: 8 }} />
+            <input value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))} placeholder="Nota / Note (optional)"
+              style={{ width: '100%', boxSizing: 'border-box', background: T.navyDark, border: `1.5px solid ${T.navyBorder}`, borderRadius: 10, padding: '12px 14px', fontFamily: F.family, fontSize: 14, color: T.white, outline: 'none', marginBottom: 10 }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={addExpense} style={{ flex: 2, padding: 12, background: `linear-gradient(135deg, ${T.blue}, ${T.cyan})`, border: 'none', borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 14, fontWeight: 800, color: T.navyDark, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Icon n="save" size={16} color={T.navyDark}/> Simpan
+              </button>
+              <button onClick={() => setAdding(false)} style={{ flex: 1, padding: 12, background: T.navyDark, border: `1px solid ${T.navyBorder}`, borderRadius: 10, cursor: 'pointer', fontFamily: F.family, fontSize: 14, color: T.muted }}>Batal</button>
+            </div>
+          </Card>
+        )}
+
+        <div>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Senarai Perbelanjaan</div>
+          {expenses.map((e, i) => (
+            <Card key={i} style={{ marginBottom: 8, padding: '12px 14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 10, background: `${e.color}22`, border: `1px solid ${e.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon n={e.icon} size={22} color={e.color}/>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 700, color: T.white }}>{e.label}</div>
+                  <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{e.note || '—'} · {e.time}</div>
+                </div>
+                <div style={{ fontFamily: F.family, fontSize: 16, fontWeight: 900, color: T.warning }}>RM {e.amount.toFixed(2)}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 9. PERFORMANCE DASHBOARD ─────────────────────────────────
+function PerformanceScreen({ onBack }) {
+  const [period, setPeriod] = React.useState('today');
+  const data = {
+    today: { delivered: 1, total: 6,   onTime: 100, score: 82, km: 28,  earnings: 65 },
+    week:  { delivered: 38, total: 42,  onTime: 90,  score: 88, km: 210, earnings: 450 },
+    month: { delivered: 156, total: 168, onTime: 93, score: 91, km: 920, earnings: 1850 },
+  };
+  const d = data[period];
+  const bars = [
+    { label: 'Isn', val: 8 }, { label: 'Sel', val: 10 }, { label: 'Rab', val: 7 },
+    { label: 'Kha', val: 12 }, { label: 'Jum', val: 9 }, { label: 'Sab', val: 6 }, { label: 'Aha', val: 1 },
+  ];
+  const maxVal = Math.max(...bars.map(b => b.val));
+  const scoreColor = d.score >= 90 ? T.success : d.score >= 75 ? T.warning : T.danger;
+
+  const statItems = [
+    { label: 'Dihantar', val: `${d.delivered}/${d.total}`, color: T.cyan,    icon: 'package_2' },
+    { label: 'On-Time',  val: `${d.onTime}%`,              color: T.success,  icon: 'timer' },
+    { label: 'Jarak',    val: `${d.km} km`,                color: T.warning,  icon: 'route' },
+    { label: 'Earnings', val: `RM${d.earnings}`,           color: T.pending,  icon: 'account_balance_wallet' },
+  ];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Prestasi / Performance" subtitle="Papan Pemuka Pemandu" onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', background: T.navyCard, borderRadius: 10, padding: 3 }}>
+          {[['today','Hari Ini'], ['week','Minggu Ini'], ['month','Bulan Ini']].map(([id, label]) => (
+            <button key={id} onClick={() => setPeriod(id)} style={{ flex: 1, padding: '8px', background: period === id ? T.blue : 'transparent', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: F.family, fontSize: 11, fontWeight: 700, color: period === id ? T.white : T.muted }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <Card style={{ background: `linear-gradient(135deg, #0F2A7A, ${T.navyCard})`, textAlign: 'center', padding: '20px 16px' }}>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginBottom: 8 }}>Skor Prestasi / Performance Score</div>
+          <div style={{ fontFamily: F.family, fontSize: 52, fontWeight: 900, color: scoreColor, lineHeight: 1 }}>{d.score}</div>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, marginBottom: 12 }}>/ 100</div>
+          <div style={{ height: 8, background: T.navyDark, borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{ width: `${d.score}%`, height: '100%', background: `linear-gradient(90deg, ${T.blue}, ${scoreColor})`, borderRadius: 4 }} />
+          </div>
+        </Card>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          {statItems.map((s, i) => (
+            <Card key={i} style={{ padding: '12px 14px' }}>
+              <div style={{ marginBottom: 4 }}><Icon n={s.icon} size={20} color={s.color}/></div>
+              <div style={{ fontFamily: F.family, fontSize: 20, fontWeight: 900, color: s.color }}>{s.val}</div>
+              <div style={{ fontFamily: F.family, fontSize: 10, color: T.muted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{s.label}</div>
+            </Card>
+          ))}
+        </div>
+
+        <Card>
+          <div style={{ fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Penghantaran Minggu Ini</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 80 }}>
+            {bars.map((b, i) => (
+              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ fontFamily: F.family, fontSize: 9, color: T.muted }}>{b.val}</div>
+                <div style={{ width: '100%', background: i === 6 ? `${T.cyan}44` : `linear-gradient(180deg, ${T.cyan}, ${T.blue})`, borderRadius: '3px 3px 0 0', height: `${(b.val / maxVal) * 60}px` }} />
+                <div style={{ fontFamily: F.family, fontSize: 8, color: T.muted, fontWeight: 600 }}>{b.label}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: F.family, fontSize: 12, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+            <Icon n="emoji_events" size={16} color={T.warning}/> Leaderboard
+          </div>
+          {[
+            { name: 'Hafiz Roslan', score: 95, rank: 1 },
+            { name: 'Ahmad Faizal', score: 88, rank: 2, isMe: true },
+            { name: 'Ravi Kumar',   score: 84, rank: 3 },
+          ].map((r, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px', borderBottom: `1px solid ${T.navyBorder}`, background: r.isMe ? `${T.cyan}11` : 'none', borderRadius: r.isMe ? 8 : 0 }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: i === 0 ? '#FFD70033' : T.navyDark, border: `1.5px solid ${i === 0 ? '#FFD700' : T.navyBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {i === 0 ? <Icon n="emoji_events" size={14} color="#FFD700"/> : <span style={{ fontFamily: F.family, fontSize: 11, fontWeight: 800, color: T.muted }}>{r.rank}</span>}
+              </div>
+              <div style={{ flex: 1, fontFamily: F.family, fontSize: 13, fontWeight: 700, color: r.isMe ? T.cyan : T.white }}>{r.name} {r.isMe && '(Anda)'}</div>
+              <div style={{ fontFamily: F.family, fontSize: 14, fontWeight: 800, color: r.isMe ? T.cyan : T.muted }}>{r.score}</div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ── 10. PROFILE / SETTINGS ───────────────────────────────────
+function ProfileScreen({ onBack, onLogout, onNav }) {
+  const [notif,     setNotif]     = React.useState(true);
+  const [darkMode,  setDarkMode]  = React.useState(true);
+  const [biometric, setBiometric] = React.useState(false);
+
+  const settings = [
+    { label: 'Push Notification', sublabel: 'Alert kerja baru & update', val: notif,     set: setNotif,     icon: 'notifications' },
+    { label: 'Dark Mode',         sublabel: 'Mod gelap / Night mode',    val: darkMode,  set: setDarkMode,  icon: 'dark_mode' },
+    { label: 'Biometric Login',   sublabel: 'Fingerprint / Face ID',     val: biometric, set: setBiometric, icon: 'fingerprint' },
+  ];
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: T.navyDark }}>
+      <AppHeader title="Profil & Tetapan" subtitle="Profile & Settings" onBack={onBack} />
+      <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Card style={{ background: `linear-gradient(135deg, #0F2A7A, ${T.navyCard})`, textAlign: 'center', padding: '20px 16px' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', background: `${T.cyan}22`, border: `3px solid ${T.cyan}`, margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon n="person" size={44} color={T.cyan}/>
+          </div>
+          <div style={{ fontFamily: F.family, fontSize: 20, fontWeight: 800, color: T.white }}>Ahmad Faizal</div>
+          <div style={{ fontFamily: F.family, fontSize: 12, color: T.cyan, marginTop: 3 }}>DRV-2024-008</div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+            {[['directions_car','WXY 1234','Kenderaan'],['work_history','2 yr','Berkhidmat'],['star','4.8','Rating']].map(([ic,val,label],i) => (
+              <div key={i} style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon n={ic} size={14} color={T.cyan}/>
+                  <span style={{ fontFamily: F.family, fontSize: 13, fontWeight: 800, color: T.white }}>{val}</span>
+                </div>
+                <div style={{ fontFamily: F.family, fontSize: 10, color: T.muted }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Maklumat Pemandu</div>
+          {[['No. Telefon','+60 12-345 6789','phone'],['IC Number','XXXXX-XX-XXXX','badge'],['Kawasan','Selangor','location_on'],['Kenderaan','Van 1.5T','local_shipping']].map(([label,val,ic],i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${T.navyBorder}`, gap: 10 }}>
+              <Icon n={ic} size={16} color={T.mutedDark}/>
+              <div style={{ fontFamily: F.family, fontSize: 12, color: T.muted, flex: 1 }}>{label}</div>
+              <div style={{ fontFamily: F.family, fontSize: 12, color: T.white, fontWeight: 600 }}>{val}</div>
+            </div>
+          ))}
+        </Card>
+
+        <Card>
+          <div style={{ fontFamily: F.family, fontSize: 11, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Tetapan / Settings</div>
+          {settings.map((s, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < settings.length - 1 ? `1px solid ${T.navyBorder}` : 'none' }}>
+              <div style={{ width: 28, display: 'flex', justifyContent: 'center' }}><Icon n={s.icon} size={20} color={T.cyan}/></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: F.family, fontSize: 13, fontWeight: 700, color: T.white }}>{s.label}</div>
+                <div style={{ fontFamily: F.family, fontSize: 11, color: T.muted }}>{s.sublabel}</div>
+              </div>
+              <div onClick={() => s.set(v => !v)} style={{ width: 44, height: 24, borderRadius: 12, background: s.val ? T.cyan : T.navyBorder, cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ width: 18, height: 18, borderRadius: '50%', background: T.white, position: 'absolute', top: 3, left: s.val ? 23 : 3, transition: 'left 0.2s' }} />
+              </div>
+            </div>
+          ))}
+        </Card>
+
+        <Card>
+          {[['Hubungi Dispatcher',T.cyan,'headset_mic'],['Syarat & Dasar',T.muted,'description'],['Versi App: 2.4.1',T.mutedDark,'info']].map(([label,color,ic],i) => (
+            <div key={i} style={{ padding: '12px 0', borderBottom: `1px solid ${T.navyBorder}`, display: 'flex', alignItems: 'center', gap: 10, cursor: i < 2 ? 'pointer' : 'default' }}>
+              <Icon n={ic} size={16} color={color}/>
+              <div style={{ flex: 1, fontFamily: F.family, fontSize: 13, color, fontWeight: 600 }}>{label}</div>
+              {i < 2 && <Icon n="chevron_right" size={16} color={T.mutedDark}/>}
+            </div>
+          ))}
+        </Card>
+
+        <button onClick={() => onNav('login')} style={{ width: '100%', padding: '16px', background: T.dangerBg, border: `1.5px solid ${T.danger}44`, borderRadius: 12, cursor: 'pointer', fontFamily: F.family, fontSize: 15, fontWeight: 800, color: T.danger, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon n="logout" size={18} color={T.danger}/> Log Keluar / Logout
+        </button>
+        <div style={{ height: 8 }} />
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { ScannerScreen, GPSScreen, ExpenseScreen, PerformanceScreen, ProfileScreen });
