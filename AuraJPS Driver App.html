@@ -1663,6 +1663,7 @@ function App() {
     profile: <ProfileScreen onBack={handleBack} onNav={handleNav} />,
     settings: <SettingsScreen onBack={handleBack} onToggleTheme={toggleTheme} theme={theme} />,
     gps: <GPSScreen onBack={handleBack} />,
+    createorder: <CreateOrderScreen onBack={handleBack} onSubmit={() => setActiveScreen('dashboard')} />,
   };
 
   return (
